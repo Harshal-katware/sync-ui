@@ -1,10 +1,11 @@
 import React from 'react'
+import MenuPage from './Menupage'
 
 function App() {
   return (
-    <div className='bg-blue-400 text-3xl '>
-      hotel managment 
-    </div>
+    <>
+    <MenuPage/>
+    </>
   )
 }
 
