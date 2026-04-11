@@ -1,9 +1,10 @@
 import React from 'react'
+import InventoryManagement from './Inventory/Inventorymanagement '
 
 function App() {
   return (
-    <div className='bg-blue-400 text-3xl '>
-      hotel managment 
+    <div>
+       <InventoryManagement/>
     </div>
   )
 }
