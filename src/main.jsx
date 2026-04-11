@@ -6,6 +6,6 @@ import RestaurantPOS from './BILLING/Restaurantpos.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RestaurantPOS />
+    <App />
   </StrictMode>,
 )
