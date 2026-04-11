@@ -1,11 +1,15 @@
-import React from 'react'
-
-function App() {
+// App.jsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+export default function App() {
   return (
-    <div className='bg-blue-400 text-3xl '>
-      hotel managment 
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
