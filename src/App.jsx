@@ -1,12 +1,22 @@
 import React from 'react'
-import MenuPage from './Menupage'
+import MenuPage from './MENU/Menupage'
+import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 function App() {
   return (
     <>
-    <MenuPage/>
+      <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login/>} />
+        <Route path="/dashboard" element={<Dashboard/>} />
+         <Route path="/MenuPage" element={<MenuPage/>} />
+      </Routes>
+      </BrowserRouter>
     </>
   )
 }
 
 export default App
+ 
