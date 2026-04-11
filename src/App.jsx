@@ -13,10 +13,6 @@ function App() {
         <Route path="/dashboard" element={<Dashboard/>} />
          <Route path="/MenuPage" element={<MenuPage/>} />
       </Routes>
-      </BrowserRouter>
-    </>
-  )
+    </BrowserRouter>
+  );
 }
-
-export default App
- 
