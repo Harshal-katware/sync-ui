@@ -52,7 +52,7 @@ function Modal({ title, onClose, children }) {
 
 function Toast({ msg }) {
   return (
-    <div className="fixed top-4 right-4 z-[200] bg-emerald-700 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg animate-bounce-in">
+    <div className="fixed top-4 right-4 z-200 bg-emerald-700 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg animate-bounce-in">
       {msg}
     </div>
   );
@@ -191,7 +191,7 @@ export default function RestaurantPOS() {
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
 
       {/* ── LEFT PANEL ── */}
-      <div className="w-80 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-80 shrink-8 bg-white border-r border-gray-200 flex flex-col">
 
         {/* Header */}
         <div className="bg-emerald-800 text-white px-4 py-3">
@@ -249,7 +249,7 @@ export default function RestaurantPOS() {
               </div>
               <span className="text-xs font-semibold text-emerald-700">₹{m.price}</span>
               <button onClick={() => openEditMenu(m)} className="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">✎</button>
-              <button onClick={() => addToOrder(m.id)} className="w-6 h-6 bg-emerald-700 text-white rounded-md text-sm flex items-center justify-center hover:bg-emerald-800 flex-shrink-0">+</button>
+              <button onClick={() => addToOrder(m.id)} className="w-6 h-6 bg-emerald-700 text-white rounded-md text-sm flex items-center justify-center hover:bg-emerald-800 shrink-0">+</button>
             </div>
           ))}
           {filteredMenu.length === 0 && <p className="text-center text-gray-400 text-xs py-6">Koi item nahi mila</p>}
