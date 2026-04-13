@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import BackButton from "../components/BackButton";
 
 const initialItems = [
   { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg" },
@@ -73,34 +74,31 @@ export default function MenuPage() {
     setItems((prev) => prev.filter((i) => i.id !== id));
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 font-sans">
+    <div className="min-h-screen bg-gray-100  font-sans ">
 
       {/* Google Fonts */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');`}</style>
 
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1
-            className="text-[26px] font-semibold text-[#1a1200] tracking-wide"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Menu Manager
-          </h1>
-          <p className="text-[11px] text-[#9b8e75] tracking-[2px] uppercase mt-1">
-            Restaurant Management System
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] text-[13px] font-medium px-5 py-2.5 rounded-lg transition-colors"
-        >
-          + Add New Item
-        </button>
-      </div>
+      <div className="w-full bg-emerald-700 px-8 py-4 flex items-center justify-between">
+  <div>
+    <h1 className="text-[26px] font-serif text-white tracking-wide">
+      Menu Manager
+    </h1>
+    <p className="text-[11px] text-[#d8d8d7] tracking-[2px] uppercase mt-1 font-semibold">
+      Restaurant Management System
+    </p>
+  </div>
+
+  <button
+    onClick={openAdd}
+    className="flex items-center gap-2 bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] text-[13px] font-medium px-5 py-2.5 rounded-lg"
+  >
+    + Add New Item
+  </button>
+</div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6 mt-8">
         {[
           { label: "Total Items", value: items.length, gold: true },
           { label: "Veg", value: vegCount, gold: false },
@@ -157,9 +155,9 @@ export default function MenuPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#e2d9c9] rounded-2xl overflow-hidden">
+<div className="bg-white border border-[#e2d9c9] rounded-2xl overflow-hidden max-h-100 overflow-y-auto">
         <table className="w-full text-[13.5px]">
-          <thead className="bg-[#faf7f0]">
+          <thead className="bg-[#faf7f0] sticky top-0 z-10">
             <tr>
               {["#", "Item Name", "Price", "Category", "Actions"].map((h) => (
                 <th
@@ -226,7 +224,12 @@ export default function MenuPage() {
             )}
           </tbody>
         </table>
+        
       </div>
+      <div className="fixed bottom-0.5 ms-1.5">
+        <BackButton to="/dashboard" /> 
+      </div>
+              
 
       {/* Modal */}
       {showModal && (
@@ -269,6 +272,7 @@ export default function MenuPage() {
                   onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
                   className="w-full bg-[#faf7f0] border border-[#e2d9c9] rounded-lg px-3.5 py-2.5 text-[13.5px] text-[#1a1200] placeholder-[#c5b99e] outline-none focus:border-[#c9a84c] transition-colors"
                 />
+                
               </div>
             ))}
 

@@ -1,15 +1,18 @@
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // ADDED
 import Navbar from "../components/Navbar";
 import restroImage from "../assets/restro4.jpg";
 
 export default function Dashboard() {
   const [selected, setSelected] = useState("");
+  const navigate = useNavigate(); // ADDED
 
   const navCards = [
-    { title: "Billing", icon: "🧾"},
-    { title: "Menu", icon: "🍽️", },
-    { title: "Inventory", icon: "📦"},
-    { title: "Reports", icon: "📊"},
+    { title: "Billing", icon: "🧾", path: "/billing" },
+    { title: "Menu", icon: "🍽️", path: "/menu" },
+    { title: "Inventory", icon: "📦", path: "/inventory" },
+    { title: "Reports", icon: "📊", path: "/reports" },
   ];
 
   return (
@@ -24,15 +27,17 @@ export default function Dashboard() {
           {navCards.map((card) => (
             <div
               key={card.title}
-              onClick={() => setSelected(card.title)}
-              className=" rounded-xl p-5 cursor-pointer hover:shadow-md bg-white/50 w-3xl"
+              onClick={() => {
+                setSelected(card.title);
+                navigate(card.path); // ADDED
+              }}
+              className="rounded-xl p-5 cursor-pointer hover:shadow-md bg-white/50 w-3xl"
             >
               <div className="flex text-2xl mb-3">
-               <span className="text-xl gap-2"> {card.icon} </span>
+                <span className="text-xl gap-2"> {card.icon} </span>
                 <p className="font-bold font-sans text-2xl">{card.title}</p>
               </div>
-
-            </div>           
+            </div>
           ))}
         </div>
       </div>
