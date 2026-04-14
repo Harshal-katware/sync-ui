@@ -9,7 +9,7 @@ export default function Navbar() {
   };
 
   return (
-    <div className="flex justify-between items-center bg-gray-800 px-6 py-4 shadow-sm relative">
+    <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#d8d8d7]">
       
       {/* Left Side */}
       <h1 className="text-xl font-semibold text-white">
