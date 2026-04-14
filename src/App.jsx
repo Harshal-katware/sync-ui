@@ -1,21 +1,21 @@
-import React from 'react'
-import InventoryManagement from './Inventory/Inventorymanagement '
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import RestaurantPOS from './BILLING/Restaurantpos';
+import InventoryManagement from './Inventory/Inventorymanagement ';
+import Menupage from './MENU/Menupage';
 
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-
-function App() {
+export default function App() {
   return (
-   <BrowserRouter>
+    <BrowserRouter>
       <Routes>
-        
-        <Route path="/" element={<Login/>} />
-        <Route path="/dashboard" element={<Dashboard/>} />
-        <Route path="/inventory" element={<InventoryManagement/>} />
+      
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/inventory" element={<InventoryManagement />} />
+        <Route path="/billing" element={<RestaurantPOS />} />
+        <Route path="/menu" element={<Menupage/>} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
-
-export default App
