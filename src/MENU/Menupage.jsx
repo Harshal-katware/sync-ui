@@ -348,11 +348,7 @@ export default function MenuPage() {
   const [form, setForm] = useState(defaultForm);
   const [nextId, setNextId] = useState(6);
 
-  // const filtered = items.filter(
-  //   (i) =>
-  //     i.name.toLowerCase().includes(search.toLowerCase()) &&
-  //     (filter === "All" || i.category === filter)
-  // );
+  
 
   const matchesSearch = (name, query) => {
   if (!query) return true;
