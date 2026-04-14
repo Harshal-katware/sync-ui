@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import BackButton from "../components/BackButton";
 
 // ─── Dummy seed data ───────────────────────────────────────────────────────────
 const SEED_ITEMS = [
@@ -198,6 +199,7 @@ export default function InventoryManagement() {
             </h1>
           </div>
           <div className="flex gap-2">
+           
             <button
               onClick={() => { setModal({ type:"IN" }); setFormErr(""); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm transition-all active:scale-95"
