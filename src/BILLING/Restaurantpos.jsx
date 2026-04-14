@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import BackButton from "../components/BackButton";
 
 const MENU_ITEMS = [
   { id: 1, name: "Butter Milk", price: 30, cat: "drink", emoji: "🥛" },
@@ -308,6 +309,7 @@ export default function RestaurantPOS() {
 
         {/* Top Bar */}
         <div className="bg-emerald-800 text-white px-5 py-3 flex items-center gap-3">
+        
           <span className="text-lg">🍴</span>
           <span className="font-bold text-base tracking-wide">Restaurant POS</span>
           <div className="flex-1" />
@@ -377,8 +379,15 @@ export default function RestaurantPOS() {
               <p className="text-sm">Is zone mein koi table nahi</p>
             </div>
           )}
+          <div className="mt-40">
+             <BackButton to="/dashboard" /> 
+          </div>
+         
         </div>
+        
       </div>
+
+      
 
       {/* ── MODALS ── */}
 

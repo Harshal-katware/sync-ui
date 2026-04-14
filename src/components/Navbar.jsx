@@ -9,10 +9,10 @@ export default function Navbar() {
   };
 
   return (
-    <div className="flex justify-between items-center bg-white px-6 py-4 shadow-sm relative">
+    <div className="flex justify-between items-center bg-gray-800 px-6 py-4 shadow-sm relative">
       
       {/* Left Side */}
-      <h1 className="text-xl font-semibold text-gray-800">
+      <h1 className="text-xl font-semibold text-white">
         🍽️ Sync Restaurant
       </h1>
 
