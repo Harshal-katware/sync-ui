@@ -45,7 +45,7 @@ export default function Dashboard() {
               <div
                 key={card.title}
                 onClick={() => navigate(card.path)}   // 🔥 routing here
-                className="bg-white/20 backdrop-blur-lg border border-white/30 
+                className="bg-white/5 backdrop-blur-sm border border-white/30 
                 rounded-2xl p-6 cursor-pointer 
                 hover:scale-[1.03] hover:shadow-2xl 
                 transition-all duration-300"

@@ -488,7 +488,7 @@ const filtered = items.filter(
               <thead className="bg-[#faf7f0] sticky top-0 z-10">
                 <tr>
                   {["#", "Item Name", "Price", "Category", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-3.5 text-left text-[10.5px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap">
+                    <th key={h} className="px-5 py-3.5 text-left text-[14px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -505,7 +505,7 @@ const filtered = items.filter(
                   filtered.map((item, idx) => (
                     <tr key={item.id} className="border-t border-[#f0ebe0] hover:bg-[#faf7f0] transition-colors">
                       <td className="px-5 py-3.5 text-[#c5b99e] text-[12px]">{idx + 1}</td>
-                      <td className="px-5 py-3.5 font-medium text-[#1a1200]">{item.name}</td>
+                      <td className="px-5 py-3.5 font-semibold text-[#1a1200] text-[16px]">{item.name}</td>
                       <td className="px-5 py-3.5 text-[#c9a84c] text-[15px] font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
                         ₹{item.price}
                       </td>

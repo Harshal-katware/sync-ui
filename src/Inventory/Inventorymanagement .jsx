@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import BackButton from "../components/BackButton";
-
+ 
 // ─── Dummy seed data ───────────────────────────────────────────────────────────
 const SEED_ITEMS = [
   { id: 1, name: "Paneer",   unit: "kg", stock: 18, minQty: 5  },
@@ -10,7 +10,7 @@ const SEED_ITEMS = [
   { id: 5, name: "Milk",     unit: "L",  stock: 3,  minQty: 5  },
   { id: 6, name: "Butter",   unit: "kg", stock: 2,  minQty: 3  },
 ];
-
+ 
 // ─── Low Stock Alert ───────────────────────────────────────────────────────────
 function LowStockAlert({ alerts, onDismiss }) {
   if (!alerts.length) return null;
@@ -41,7 +41,7 @@ function LowStockAlert({ alerts, onDismiss }) {
     </div>
   );
 }
-
+ 
 // ─── Log Row ───────────────────────────────────────────────────────────────────
 function LogRow({ entry }) {
   const isIn = entry.type === "IN";
@@ -62,7 +62,7 @@ function LogRow({ entry }) {
     </div>
   );
 }
-
+ 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, accent }) {
   return (
@@ -74,7 +74,7 @@ function StatCard({ label, value, accent }) {
     </div>
   );
 }
-
+ 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function InventoryManagement() {
   const [items, setItems]               = useState(SEED_ITEMS);
@@ -87,14 +87,14 @@ export default function InventoryManagement() {
   const [form, setForm]                 = useState({ itemId: "", qty: "" });
   const [newItem, setNewItem]           = useState({ name:"", unit:"kg", stock:"0", minQty:"" });
   const [formErr, setFormErr]           = useState("");
-
+ 
   useEffect(() => {
     setAlerts(items.filter((i) => i.stock <= i.minQty && !dismissedIds.has(i.id)));
   }, [items, dismissedIds]);
-
+ 
   const dismissAlert = (id) => setDismissed((p) => new Set([...p, id]));
   const now = () => new Date().toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
-
+ 
   const handleTransaction = () => {
     setFormErr("");
     const item = items.find((i) => i.id === Number(form.itemId));
@@ -110,7 +110,7 @@ export default function InventoryManagement() {
     setModal(null);
     setForm({ itemId: "", qty: "" });
   };
-
+ 
   const handleAddItem = () => {
     setFormErr("");
     if (!newItem.name.trim())                              return setFormErr("Item name is required.");
@@ -119,7 +119,7 @@ export default function InventoryManagement() {
     setAddItemModal(false);
     setNewItem({ name:"", unit:"kg", stock:"0", minQty:"" });
   };
-
+ 
   const [search, setSearch] = useState("");
   const filteredItems = items.filter((i) =>
     i.name.toLowerCase().includes(search.toLowerCase())
@@ -128,11 +128,11 @@ export default function InventoryManagement() {
   const todayIn   = log.filter((l) => l.type === "IN").reduce((s, l) => s + l.qty, 0);
   const todayUsed = log.filter((l) => l.type === "OUT").reduce((s, l) => s + l.qty, 0);
   const inp = "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
-
+ 
   return (
-   <div className="h-screen overflow-hidden flex flex-col" style={{ background:"#faf9f6", fontFamily:"'DM Sans',sans-serif" }}> 
+   <div className="h-screen overflow-hidden flex flex-col" style={{ background:"#faf9f6", fontFamily:"'DM Sans',sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap%27);
         @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes fadeIn    { from{opacity:0;transform:scale(.97)}        to{opacity:1;transform:scale(1)}    }
         .card-hover { transition:box-shadow .2s,transform .2s; }
@@ -142,9 +142,9 @@ export default function InventoryManagement() {
         .stock-scroll::-webkit-scrollbar-thumb { background:#d6d3d1; border-radius:99px; }
         .stock-scroll::-webkit-scrollbar-thumb:hover { background:#a8a29e; }
       `}</style>
-
+ 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
-
+ 
       {/* ══ NAVBAR ══════════════════════════════════════════════════════════════ */}
       <nav className="sticky top-0 z-40 border-b border-gray-200 "
            style={{ background:"rgba(250,249,246,.95)", backdropFilter:"blur(12px)" }}>
@@ -162,10 +162,10 @@ export default function InventoryManagement() {
               </p>
             </div>
           </div>
-
+ 
         </div>
       </nav>
-
+ 
       {/* ══ TAB BAR (separate from navbar) ═════════════════════════════════════ */}
       <div className="bg-white border-b border-gray-200 shadow-sm mt-1">
         <div className="w-full px-6 flex">
@@ -186,14 +186,14 @@ export default function InventoryManagement() {
           ))}
         </div>
       </div>
-
+ 
       {/* ══ MAIN CONTENT ════════════════════════════════════════════════════════ */}
       <main className="w-full px-4 sm:px-6 py-4 flex-1 overflow-hidden">
-
+ 
         {/* ── DASHBOARD ── */}
         {activeTab === "dashboard" && (
           <div style={{ animation:"fadeIn .4s ease" }}>
-
+ 
             {/* Stat cards */}
             <div className="grid grid-cols-4 gap-3 mb-4 w-full py-">
               <StatCard label="Total Items"   value={items.length}         accent="#1c1917" />
@@ -201,11 +201,11 @@ export default function InventoryManagement() {
               <StatCard label="Stocked Today" value={todayIn.toFixed(1)}   accent="#16a34a" />
               <StatCard label="Used Today"    value={todayUsed.toFixed(1)} accent="#ea580c" />
             </div>
-
+ 
             {/* Current Stock card — constrained width */}
             <div className="max-w-6xl mx-auto">
             <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-
+ 
               {/* ── Card header: title + action buttons ── */}
               <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
                 <h2 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:"1.05rem" }}>
@@ -249,7 +249,7 @@ export default function InventoryManagement() {
                   </button>
                 </div>
               </div>
-
+ 
               {/* ── Scrollable stock list ── */}
               <div className="stock-scroll overflow-y-auto divide-y divide-gray-50"
                    style={{ maxHeight:"calc(100vh - 380px)" }}>
@@ -297,7 +297,7 @@ export default function InventoryManagement() {
             </div>
           </div>
         )}
-
+ 
         {/* ── TODAY'S LOG ── */}
         {activeTab === "log" && (
           <div style={{ animation:"fadeIn .4s ease" }}>
@@ -322,7 +322,7 @@ export default function InventoryManagement() {
             </div>
           </div>
         )}
-
+ 
         {/* ── ITEMS ── */}
         {activeTab === "items" && (
           <div style={{ animation:"fadeIn .4s ease" }}>
@@ -372,7 +372,7 @@ export default function InventoryManagement() {
           </div>
         )}
       </main>
-
+ 
       {/* ── Stock In / Mark Used Modal ─────────────────────────────────────────── */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -417,7 +417,7 @@ export default function InventoryManagement() {
           </div>
         </div>
       )}
-
+ 
       {/* ── Add Item Modal ─────────────────────────────────────────────────────── */}
       {addItemModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -464,7 +464,7 @@ export default function InventoryManagement() {
               </button>
             </div>
           </div>  
-        
+       
         </div>
       )}
         <div className="sticky bottom-0 bg-[#faf9f6] border-t border-gray-100 px-4 py-2">

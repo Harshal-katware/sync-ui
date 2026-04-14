@@ -9,10 +9,10 @@ export default function Navbar() {
   };
 
   return (
-    <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#d8d8d7]">
+    <div className="w-full  bg-white/5 backdrop-blur-sm px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#b2d1df]">
       
       {/* Left Side */}
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-serif text-gray-100">
         🍽️ Sync Restaurant
       </h1>
 
@@ -23,7 +23,7 @@ export default function Navbar() {
         <div className="relative">
           <div
             onClick={() => toggleMenu("settings")}
-            className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-full hover:bg-gray-800 cursor-pointer"
           >
             <Settings size={20} />
           </div>
@@ -48,7 +48,7 @@ export default function Navbar() {
         <div className="relative">
           <div
             onClick={() => toggleMenu("account")}
-            className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-full hover:bg-gray-800 cursor-pointer"
           >
             <User size={20} />
           </div>
