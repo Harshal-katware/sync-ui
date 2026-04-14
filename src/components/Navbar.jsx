@@ -9,7 +9,7 @@ export default function Navbar() {
   };
 
   return (
-    <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#d8d8d7]">
+    <div className="w-full bg-white/5 backdrop-blur-lg px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#d8d8d7]">
       
       {/* Left Side */}
       <h1 className="text-xl font-semibold text-white">
@@ -23,7 +23,7 @@ export default function Navbar() {
         <div className="relative">
           <div
             onClick={() => toggleMenu("settings")}
-            className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-full hover:bg-gray-800 cursor-pointer"
           >
             <Settings size={20} />
           </div>
@@ -33,11 +33,11 @@ export default function Navbar() {
               bg-white/10 backdrop-blur-md border border-white/20 
               rounded-lg shadow-lg z-50 text-white"
             >
-              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
                 Restaurant Info
               </p>
               
-              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
                 Staff Management
               </p>
             </div>
@@ -48,7 +48,7 @@ export default function Navbar() {
         <div className="relative">
           <div
             onClick={() => toggleMenu("account")}
-            className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+            className="p-2 rounded-full hover:bg-gray-800 cursor-pointer"
           >
             <User size={20} />
           </div>
@@ -58,13 +58,13 @@ export default function Navbar() {
               bg-white/10 backdrop-blur-md border border-white/20 
               rounded-lg shadow-lg z-50 text-white"
             >
-              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
                 Profile
               </p>
-              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
                 Change Password
               </p>
-              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
                 Logout
               </p>
             </div>
