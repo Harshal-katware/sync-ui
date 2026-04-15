@@ -29,15 +29,15 @@ export default function Navbar() {
           </div>
 
           {openMenu === "settings" && (
-            <div className="absolute right-0 mt-2 w-48 
-              bg-white/10 backdrop-blur-md border border-white/20 
-              rounded-lg shadow-lg z-50 text-white"
+            <div className="absolute right-0 mt-4 w-48 
+              bg-white/20 backdrop-blur-lg border border-white/20 
+              rounded-lg shadow-lg z-50 text-white "
             >
-              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
                 Restaurant Info
               </p>
               
-              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
                 Staff Management
               </p>
             </div>
@@ -54,17 +54,17 @@ export default function Navbar() {
           </div>
 
           {openMenu === "account" && (
-            <div className="absolute right-0 mt-2 w-48 
-              bg-white/10 backdrop-blur-md border border-white/20 
-              rounded-lg shadow-lg z-50 text-white"
+            <div className="absolute right-0 mt-4 w-48 
+              bg-white/20 backdrop-blur-lg border border-white/20 
+              rounded-lg shadow-lg z-50 text-white "
             >
-              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/20  cursor-pointer">
                 Profile
               </p>
-              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
                 Change Password
               </p>
-              <p className="px-4 py-2 hover:bg-white/30 cursor-pointer">
+              <p className="px-4 py-2 hover:bg-white/20 cursor-pointer">
                 Logout
               </p>
             </div>
