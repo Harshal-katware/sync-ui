@@ -1,85 +1,207 @@
-import bgImage from "../assets/restro.jpg"; // apni image yaha daal
+import { useState } from "react";
+import bg from "../assets/restro4.jpg";
+import logo from "../assets/chef2.jpg";
+import { Eye, EyeOff } from "lucide-react";
+export default function AuthPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [remember, setRemember] = useState(false);
 
-export default function Login() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
+
+  const [errors, setErrors] = useState({});
+
+  // 🔥 Handle input
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // 🔥 Validation
+  const validate = () => {
+    let err = {};
+
+    if (!isLogin && !form.name) {
+      err.name = "Name is required";
+    }
+
+    if (!form.email) err.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(form.email))
+      err.email = "Invalid email";
+
+    if (!form.password) err.password = "Password is required";
+    else if (form.password.length < 6)
+      err.password = "Min 6 characters";
+
+    if (!isLogin) {
+      if (!form.confirm) err.confirm = "Confirm password required";
+      else if (form.confirm !== form.password)
+        err.confirm = "Passwords do not match";
+    }
+
+    return err;
+  };
+
+  // 🔥 Submit
+  const handleSubmit = () => {
+    const validationErrors = validate();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      alert(isLogin ? "Login Success ✅" : "Signup Success ✅");
+    }
+  };
+
   return (
-    <div className="min-h-screen flex">
-      
-      {/*Left Image Section */}
-      <div
-        className="w-1/2 bg-cover bg-center hidden md:block"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      ></div>
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${bg})` }}
+    >
+      <div className="absolute inset-0 bg-black/60"></div>
 
-      {/*Right Login Section */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-[#f5f1ea]">
+      <div className="relative z-10 w-full max-w-md p-8 text-white text-center">
         
-        <div className="w-full max-w-sm p-8">
-          
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            CREATE ACCOUNT
-          </h1>
+        {/* Logo */}
+        <div className="mb-4">
+          <div className="w-20 h-20 mx-auto rounded-full bg-white/20 flex items-center justify-center">
+            <img
+              src={logo}
+              alt="logo"
+              className="w-20 h-20 object-cover rounded-full"
+            />
+          </div>
+        </div>
 
-          {/* Input Fields */}
-          <div className="space-y-4">
+        {/* Title */}
+        <h1 className="text-2xl mb-6">
+          {isLogin ? "Login to Continue" : "Create Account"}
+        </h1>
+
+        {/* Inputs */}
+        <div className="space-y-4 text-left">
+
+          {!isLogin && (
+            <div>
+              <label className="text-sm">Full Name</label>
+              <input
+                type="text"
+                name="name"
+                placeholder="Enter name"
+                onChange={handleChange}
+                className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
+              />
+              {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+            </div>
+          )}
+
+          <div>
+            <label className="text-sm">Email Address</label>
             <input
               type="email"
-              placeholder="E-mail"
-              className="w-full px-4 py-3 rounded-full bg-gray-200 outline-none"
+              name="email"
+              placeholder="abc@xyz.com"
+              onChange={handleChange}
+              className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
             />
-
-            <input
-              type="password"
-              placeholder="password"
-              className="w-full px-4 py-3 rounded-full bg-gray-200 outline-none"
-            />
+            {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
           </div>
 
-          {/* Forgot Password */}
-          <div className="text-right mt-2 text-sm text-green-600 cursor-pointer">
-            forgot password?
-          </div>
+         <div className="relative">
+           <label className="text-sm">Password</label>
 
-          {/* Login Button */}
-          <button className="w-full mt-4 bg-green-500 text-white py-3 rounded-full hover:bg-green-600 transition">
-            Login
-          </button>
+           <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="********"
+              onChange={handleChange}
+              className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
+           />
 
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <span className="px-3 text-gray-500 text-sm">Continua With</span>
-            <div className="flex-1 h-px bg-gray-300"></div>
-          </div>
+           <span
+             onClick={() => setShowPassword(!showPassword)}
+             className="absolute right-3 top-9 cursor-pointer text-gray-300 hover:text-white"
+           >
+             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+           </span>
 
-          {/* Social Buttons */}
-          <div className="flex gap-3">
-            <button className="flex-1 border rounded-full py-2 flex items-center justify-center gap-2 hover:bg-gray-100">
-              <img
-                src="https://img.icons8.com/color/16/google-logo.png"
-                alt="google"
+           {errors.password && (
+            <p className="text-red-400 text-sm">{errors.password}</p>
+            )}
+         </div>
+
+        {!isLogin && (
+          <div className="relative">
+            <label className="text-sm">Confirm Password</label>
+
+           <input
+               type={showConfirm ? "text" : "password"}
+               name="confirm"
+               placeholder="Confirm password"
+               onChange={handleChange}
+               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
+           />
+
+           <span
+               onClick={() => setShowConfirm(!showConfirm)}
+               className="absolute right-3 top-9 cursor-pointer text-gray-300 hover:text-white">
+               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+           </span>
+
+            {errors.confirm && (
+             <p className="text-red-400 text-sm">{errors.confirm}</p>
+             )}
+         </div>
+          )}
+      </div>
+
+        {/* Options */}
+        {isLogin && (
+          <div className="flex justify-between text-sm mt-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={() => setRemember(!remember)}
               />
-              Google
-            </button>
+              Remember Me
+            </label>
 
-            <button className="flex-1 border rounded-full py-2 flex items-center justify-center gap-2 hover:bg-gray-100">
-              <img
-                src="https://img.icons8.com/color/16/facebook-new.png"
-                alt="fb"
-              />
-              Facebook
-            </button>
-          </div>
-
-          {/* Signup */}
-          <p className="text-center text-sm text-gray-600 mt-6">
-            {" "}
-            <span className="text-green-600 cursor-pointer">
-                Create an account
+            <span
+              onClick={() => alert("Reset password feature coming soon")}
+              className="underline cursor-pointer"
+            >
+              Forgot Password
             </span>
-          </p>
+          </div>
+        )}
 
-        </div>
+        {/* Button */}
+        <button
+          onClick={handleSubmit}
+          className="w-full mt-5 bg-white text-black py-2 rounded font-semibold"
+        >
+          {isLogin ? "SIGN IN" : "SIGN UP"}
+        </button>
+
+        {/* Switch */}
+        <p className="mt-4 text-sm">
+          {isLogin ? "New User?" : "Already have account?"}{" "}
+          <span
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setErrors({});
+            }}
+            className="text-blue-400 cursor-pointer"
+          >
+            {isLogin ? "Sign Up" : "Login"}
+          </span>
+        </p>
+
       </div>
     </div>
   );

@@ -3,9 +3,9 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import RestaurantPOS from './BILLING/Restaurantpos';
 // FIXED
+import InventoryManagement from "./Inventory/Inventorymanagement ";  
 import Menupage from './MENU/Menupage';
-import InventoryManagement from "./Inventory/Inventorymanagement ";
-
+import Reports from './pages/Reports';
 export default function App() {
   return (
     <BrowserRouter>
@@ -15,7 +15,8 @@ export default function App() {
 
         <Route path="/inventory" element={<InventoryManagement/>} />
         <Route path="/billing" element={<RestaurantPOS />} />
-        <Route path="/menu" element={<Menupage />} />
+        <Route path="/menu" element={<Menupage/>} />
+        <Route path="/reports" element={<Reports/>} />
       </Routes>
     </BrowserRouter>
   );

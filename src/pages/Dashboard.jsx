@@ -1,44 +1,3 @@
-// import { useNavigate } from "react-router-dom";
-// import Navbar from "../components/Navbar";
-// import restroImage from "../assets/restro4.jpg";
-
-// export default function Dashboard() {
-//   const navigate = useNavigate();
-
-//   const navCards = [
-//     { title: "Billing", icon: "🧾", path: "/billing" },
-//     { title: "Menu", icon: "🍽️", path: "/menu" },
-//     { title: "Inventory", icon: "📦", path: "/inventory" },
-//     { title: "Reports", icon: "📊", path: "/reports" },
-//   ];
-
-//   return (
-//     <div
-//       className="min-h-screen bg-cover bg-center bg-no-repeat"
-//       style={{ backgroundImage: `url(${restroImage})` }}
-//     >
-//       <Navbar />
-
-//       <div className="p-8">
-//         <div className="grid grid-cols-1 gap-4">
-//           {navCards.map((card) => (
-//             <div
-//               key={card.title}
-//               onClick={() => navigate(card.path)}   // 🔥 navigation
-//               className="rounded-xl p-5 cursor-pointer hover:shadow-md bg-white/50 w-3xl"
-//             >
-//               <div className="flex items-center gap-3">
-//                 <span className="text-xl">{card.icon}</span>
-//                 <p className="font-bold text-2xl">{card.title}</p>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import restroImage from "../assets/restro4.jpg";
@@ -63,7 +22,7 @@ export default function Dashboard() {
       ></div>
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/20"></div>
+      <div className="absolute inset-0 bg-linear-to-r from-black/50 to-black/10"></div>
 
       {/* Content */}
       <div className="relative z-10">
@@ -74,7 +33,7 @@ export default function Dashboard() {
           
           {/* Heading */}
           <div className="mb-8 text-white">
-            <h1 className="text-3xl font-bold">Welcome Rushi 👋</h1>
+            <h1 className="text-3xl font-bold">Welcome👋</h1>
             <p className="text-sm opacity-80">
               Manage your restaurant efficiently
             </p>
