@@ -194,7 +194,7 @@ export default function RestaurantPOS() {
       {/* ── LEFT PANEL ── */}
       <div className="w-80 shrink-8 bg-white border-r border-gray-200 flex flex-col">
 
-        {/* Header */}
+        
         <div className="bg-emerald-800 text-white px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">🍽️</span>
