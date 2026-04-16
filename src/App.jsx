@@ -8,7 +8,7 @@ import Menupage from './MENU/Menupage';
 import TopSellingProducts from "./Report/Subreport/TopSellingProducts";
 import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
-// import InventoryManagement from "./Inventory/Inventorymanagement ";
+import InventoryManagement from "./Inventory/Inventorymanagement";
 
 export default function App() {
   return (
@@ -16,7 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* <Route path="/inventory" element={<InventoryManagement/>} /> */}
+        <Route path="/inventory" element={<InventoryManagement/>} />
         <Route path="/billing" element={<RestaurantPOS />} />
         <Route path="/menu" element={<Menupage />} />
         <Route path="/reports" element={<Reports/>} />

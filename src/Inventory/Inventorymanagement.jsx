@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 // ─── Dummy seed data ───────────────────────────────────────────────────────────
 const SEED_ITEMS = [
   { id: 1, name: "Paneer",   unit: "kg", stock: 18, minQty: 5  },
