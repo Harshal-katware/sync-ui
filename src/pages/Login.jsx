@@ -17,12 +17,12 @@ export default function AuthPage() {
 
   const [errors, setErrors] = useState({});
 
-  // 🔥 Handle input
+  //  Handle input
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🔥 Validation
+  //  Validation
   const validate = () => {
     let err = {};
 
@@ -47,7 +47,7 @@ export default function AuthPage() {
     return err;
   };
 
-  // 🔥 Submit
+  //  Submit
   const handleSubmit = () => {
     const validationErrors = validate();
     setErrors(validationErrors);
