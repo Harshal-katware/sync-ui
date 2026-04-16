@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
+import BackButton from "../../components/BackButton";
 import jsPDF from "jspdf";
 
 export default function CustomizeReport() {
@@ -15,7 +17,7 @@ export default function CustomizeReport() {
   const [sort, setSort] = useState("top");
   const [show, setShow] = useState(false);
 
-  //  Dummy Data
+  // Dummy Data
   const data = [
     { name: "Pizza", qty: 50, revenue: 10000, payment: "UPI", type: "dine-in" },
     { name: "Burger", qty: 30, revenue: 6000, payment: "Cash", type: "takeaway" },
@@ -30,12 +32,12 @@ export default function CustomizeReport() {
     );
   });
 
-  //  Sorting
+  // Sorting
   filtered.sort((a, b) =>
     sort === "top" ? b.qty - a.qty : a.qty - b.qty
   );
 
-  //  Totals
+  // Totals
   const totalSales = filtered.reduce((acc, i) => acc + i.revenue, 0);
   const totalQty = filtered.reduce((acc, i) => acc + i.qty, 0);
 
@@ -57,160 +59,156 @@ export default function CustomizeReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-6 max-w-6xl mx-auto">
+    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
 
-        <h1 className="text-2xl font-bold mb-6">
-           Customize Report
-        </h1>
+      {/* Navbar (Fixed) */}
+      <Navbar variant="module" moduleName="Reports" />
 
-        {/*  Filters */}
-        <div className="bg-white p-6 rounded shadow mb-6 grid grid-cols-2 gap-4">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 max-w-6xl mx-auto">
 
-          {/* Date Type */}
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="daily">Daily</option>
-            <option value="monthly">Monthly</option>
-          </select>
+          <h1 className="text-2xl font-bold mb-6">
+            Customize Report
+          </h1>
 
-          {/* Date / Month */}
-          {type === "daily" ? (
-            <input
-              type="date"
-              onChange={(e) => setDate(e.target.value)}
+          {/* Filters */}
+          <div className="bg-white p-6 rounded shadow mb-6 grid grid-cols-2 gap-4">
+
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
               className="border p-2 rounded"
-            />
-          ) : (
-            <input
-              type="month"
-              onChange={(e) => setMonth(e.target.value)}
-              className="border p-2 rounded"
-            />
-          )}
+            >
+              <option value="daily">Daily</option>
+              <option value="monthly">Monthly</option>
+            </select>
 
-          {/* Report Type */}
-          <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="sales">Sales</option>
-            <option value="orders">Orders</option>
-            <option value="products">Products</option>
-          </select>
-
-          {/* Payment */}
-          <select
-            value={payment}
-            onChange={(e) => setPayment(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="all">All Payments</option>
-            <option value="Cash">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="Card">Card</option>
-          </select>
-
-          {/* Order Type */}
-          <select
-            value={orderType}
-            onChange={(e) => setOrderType(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="all">All Orders</option>
-            <option value="dine-in">Dine-in</option>
-            <option value="takeaway">Takeaway</option>
-            <option value="online">Online</option>
-          </select>
-
-          {/* View Type */}
-          <select
-            value={viewType}
-            onChange={(e) => setViewType(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="summary">Summary</option>
-            <option value="detailed">Detailed</option>
-          </select>
-
-          {/* Sorting */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="border p-2 rounded"
-          >
-            <option value="top">Top Selling</option>
-            <option value="low">Low Selling</option>
-          </select>
-
-        </div>
-
-        {/* Generate */}
-        <button
-          onClick={() => setShow(true)}
-          className="px-6 py-2 bg-blue-500 text-white rounded mb-6"
-        >
-          Generate Report
-        </button>
-
-        {/*  Output */}
-        {show && (
-          <div className="bg-white p-6 rounded shadow">
-
-            {/* Summary */}
-            {viewType === "summary" && (
-              <div className="mb-4">
-                <p>Total Sales: ₹{totalSales}</p>
-                <p>Total Items Sold: {totalQty}</p>
-              </div>
+            {type === "daily" ? (
+              <input
+                type="date"
+                onChange={(e) => setDate(e.target.value)}
+                className="border p-2 rounded"
+              />
+            ) : (
+              <input
+                type="month"
+                onChange={(e) => setMonth(e.target.value)}
+                className="border p-2 rounded"
+              />
             )}
 
-            {/* Table */}
-            <table className="w-full mb-4">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="p-2">Item</th>
-                  <th className="p-2">Qty</th>
-                  <th className="p-2">Revenue</th>
-                  <th className="p-2">Payment</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filtered.map((item, i) => (
-                  <tr key={i} className="border-b">
-                    <td className="p-2">{item.name}</td>
-                    <td className="p-2">{item.qty}</td>
-                    <td className="p-2">₹{item.revenue}</td>
-                    <td className="p-2">{item.payment}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* PDF */}
-            <button
-              onClick={downloadPDF}
-              className="px-4 py-2 bg-green-500 text-white rounded"
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="border p-2 rounded"
             >
-              📄 Download PDF
-            </button>
-            
+              <option value="sales">Sales</option>
+              <option value="orders">Orders</option>
+              <option value="products">Products</option>
+            </select>
+
+            <select
+              value={payment}
+              onChange={(e) => setPayment(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="all">All Payments</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Card">Card</option>
+            </select>
+
+            <select
+              value={orderType}
+              onChange={(e) => setOrderType(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="all">All Orders</option>
+              <option value="dine-in">Dine-in</option>
+              <option value="takeaway">Takeaway</option>
+              <option value="online">Online</option>
+            </select>
+
+            <select
+              value={viewType}
+              onChange={(e) => setViewType(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="summary">Summary</option>
+              <option value="detailed">Detailed</option>
+            </select>
+
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="top">Top Selling</option>
+              <option value="low">Low Selling</option>
+            </select>
+
           </div>
-        )}
-      </div>
-        <div className="fixed bottom-6 left-6">
-         <button
-           onClick={() => navigate("/reports")}
-           className="px-4 py-2 bg-black text-white rounded-xl border border-white/30 shadow-lg"
+
+          {/* Generate Button */}
+          <button
+            onClick={() => setShow(true)}
+            className="px-6 py-2 bg-blue-500 text-white rounded mb-6"
           >
-           Back
-         </button>
+            Generate Report
+          </button>
+
+          {/* Output */}
+          {show && (
+            <div className="bg-white p-6 rounded shadow">
+
+              {viewType === "summary" && (
+                <div className="mb-4">
+                  <p>Total Sales: ₹{totalSales}</p>
+                  <p>Total Items Sold: {totalQty}</p>
+                </div>
+              )}
+
+              <table className="w-full mb-4">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="p-2">Item</th>
+                    <th className="p-2">Qty</th>
+                    <th className="p-2">Revenue</th>
+                    <th className="p-2">Payment</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filtered.map((item, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">{item.name}</td>
+                      <td className="p-2">{item.qty}</td>
+                      <td className="p-2">₹{item.revenue}</td>
+                      <td className="p-2">{item.payment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <button
+                onClick={downloadPDF}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                📄 Download PDF
+              </button>
+
+            </div>
+          )}
+
         </div>
+      </div>
+
+      {/* Fixed Back Button */}
+      <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+        <BackButton to="/reports" />
+      </div>
+
     </div>
   );
 }

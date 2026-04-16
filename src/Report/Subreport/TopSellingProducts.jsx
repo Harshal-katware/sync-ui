@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
+import BackButton from "../../components/BackButton";
 import jsPDF from "jspdf";
 
 export default function TopSellingProducts() {
@@ -42,7 +44,10 @@ export default function TopSellingProducts() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+      <Navbar variant="module" moduleName="Reports" />
+      
+      <div className="flex-1 overflow-y-auto">
       <div className="p-6 max-w-5xl mx-auto">
 
         {/* Title */}
@@ -116,14 +121,12 @@ export default function TopSellingProducts() {
         </button>
 
       </div>
-      <div className="fixed bottom-6 left-6">
-         <button
-           onClick={() => navigate("/reports")}
-           className="px-4 py-2 bg-black text-white rounded-xl border border-white/30 shadow-lg"
-          >
-           Back
-         </button>
+      </div>
+      <div className="p-6">
+        <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+          <BackButton to="/reports" />
         </div>
+      </div>
     </div>
   );
 }

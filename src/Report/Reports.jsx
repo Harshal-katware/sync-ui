@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-
+import BackButton from "../components/BackButton";
+import Navbar from "../components/Navbar";
 export default function ReportsDashboard() {
   const navigate = useNavigate();
 
@@ -21,15 +22,12 @@ export default function ReportsDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
+    <div className=" bg-gray-100 ">
+         
+     <Navbar variant="module" moduleName="Reports" />
 
       {/* 🔥 Main Content */}
-      <div className="p-6">
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">📊 REPORT</h1>
-        </div>
+      <div className="p-5">
 
         {/* Sections */}
         {sections.map((section, index) => (
@@ -56,14 +54,9 @@ export default function ReportsDashboard() {
       </div>
 
       {/* 🔙 Back Button (Bottom Left) */}
-      <div className="p-6">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
-        >
-           Back
-        </button>
-      </div>
+       <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+          <BackButton to="/Dashboard" />
+       </div>
 
     </div>
   );
