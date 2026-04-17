@@ -38,10 +38,10 @@ export default function ShiftSummary() {
   return (
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
 
-      {/* 🔥 Navbar (fixed) */}
+      {/*  Navbar (fixed) */}
       <Navbar variant="module" moduleName="ShiftSummary" />
 
-      {/* 🔥 Scrollable Content */}
+      {/*  Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 max-w-5xl mx-auto">
 

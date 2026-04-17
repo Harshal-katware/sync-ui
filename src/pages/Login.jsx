@@ -24,28 +24,43 @@ export default function AuthPage() {
 
   //  Validation
   const validate = () => {
-    let err = {};
+  let err = {};
 
-    if (!isLogin && !form.name) {
-      err.name = "Name is required";
-    }
+  const name = form.name.trim();
+  const email = form.email.trim();
+  const password = form.password.trim();
+  const confirm = form.confirm.trim();
 
-    if (!form.email) err.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      err.email = "Invalid email";
+  // Name
+  if (!isLogin) {
+    if (!name) err.name = "Name is required";
+    else if (name.length < 3)
+      err.name = "Minimum 3 characters required";
+  }
 
-    if (!form.password) err.password = "Password is required";
-    else if (form.password.length < 6)
-      err.password = "Min 6 characters";
+  // Email
+  if (!email) err.email = "Email is required";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    err.email = "Enter valid email (example@gmail.com)";
 
-    if (!isLogin) {
-      if (!form.confirm) err.confirm = "Confirm password required";
-      else if (form.confirm !== form.password)
-        err.confirm = "Passwords do not match";
-    }
+  //  Password (Strong validation)
+  if (!password) err.password = "Password is required";
+  else if (password.length < 6)
+    err.password = "Minimum 6 characters required";
+  else if (!/[A-Z]/.test(password))
+    err.password = "At least 1 uppercase letter required";
+  else if (!/[0-9]/.test(password))
+    err.password = "At least 1 number required";
 
-    return err;
-  };
+  //  Confirm Password
+  if (!isLogin) {
+    if (!confirm) err.confirm = "Confirm password required";
+    else if (confirm !== password)
+      err.confirm = "Passwords do not match";
+  }
+
+  return err;
+};
 
   //  Submit
   const handleSubmit = () => {
