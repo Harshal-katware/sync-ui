@@ -6,7 +6,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const navCards = [
-    { title: "Billing", desc: "Manage orders easily", icon: "🧾", path: "/billing" },
+    {
+      title: "Billing",
+      desc: "Manage orders easily",
+      icon: "🧾",
+      path: "/billing",
+    },
     { title: "Menu", desc: "Update food items", icon: "🍽️", path: "/menu" },
     { title: "Inventory", desc: "Track stock", icon: "📦", path: "/inventory" },
     { title: "Reports", desc: "View analytics", icon: "📊", path: "/reports" },
@@ -14,7 +19,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen relative">
-      
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -26,11 +30,9 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="relative z-10">
-        
-        <Navbar />
+        <Navbar variant="dashboard" />
 
         <div className="p-8 max-w-5xl">
-          
           {/* Heading */}
           <div className="mb-8 text-white">
             <h1 className="text-3xl font-bold">Welcome👋</h1>
@@ -44,7 +46,7 @@ export default function Dashboard() {
             {navCards.map((card) => (
               <div
                 key={card.title}
-                onClick={() => navigate(card.path)}   // 🔥 routing here
+                onClick={() => navigate(card.path)} // 🔥 routing here
                 className="bg-white/5 backdrop-blur-lg border border-white/30 
                 rounded-2xl p-6 cursor-pointer 
                 hover:scale-[1.03] hover:shadow-2xl 
@@ -57,17 +59,12 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                <p className="text-1xl text-gray-200 mt-2">
-                  {card.desc}
-                </p>
+                <p className="text-1xl text-gray-200 mt-2">{card.desc}</p>
 
-                <p className="text-xs text-gray-300 mt-3">
-                  Click to manage →
-                </p>
+                <p className="text-xs text-gray-300 mt-3">Click to manage →</p>
               </div>
             ))}
           </div>
-
         </div>
       </div>
     </div>

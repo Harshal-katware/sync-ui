@@ -21,41 +21,46 @@ const MENU_ITEMS = [
 ];
 
 const INITIAL_TABLES = [
-  ...Array.from({ length: 11 }, (_, i) => ({ id: i + 1, name: `Table ${i + 1}`, zone: "HALL" })),
-  ...Array.from({ length: 5 }, (_, i) => ({ id: i + 12, name: `Table ${i + 12}`, zone: "FAMILY" })),
-  ...Array.from({ length: 4 }, (_, i) => ({ id: i + 31, name: `Bill ${i + 31}`, zone: "PARCEL" })),
+  ...Array.from({ length: 11 }, (_, i) => ({
+    id: i + 1,
+    name: `Table ${i + 1}`,
+    zone: "HALL",
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: i + 12,
+    name: `Table ${i + 12}`,
+    zone: "FAMILY",
+  })),
+  ...Array.from({ length: 4 }, (_, i) => ({
+    id: i + 31,
+    name: `Bill ${i + 31}`,
+    zone: "PARCEL",
+  })),
 ];
 
-const ZONE_COLORS = {
-  HALL: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  FAMILY: "bg-amber-50 text-amber-700 border-amber-200",
-  PARCEL: "bg-blue-50 text-blue-700 border-blue-200",
-};
-
-const CAT_BADGE = {
-  veg: "bg-green-100 text-green-700",
-  nonveg: "bg-red-100 text-red-700",
-  drink: "bg-blue-100 text-blue-700",
-};
-
-function Modal({ title, onClose, children }) {
+function Toast({ msg }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-80 border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-        </div>
-        {children}
-      </div>
+    <div className="fixed top-3 right-3 z-50 bg-green-800 text-white text-sm px-4 py-2 rounded shadow-lg">
+      {msg}
     </div>
   );
 }
 
-function Toast({ msg }) {
+function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed top-4 right-4 z-200 bg-emerald-700 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg animate-bounce-in">
-      {msg}
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-2xl p-5 w-72 border border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
@@ -66,15 +71,12 @@ export default function RestaurantPOS() {
   const [orders, setOrders] = useState({});
   const [selectedTable, setSelectedTable] = useState(null);
   const [zone, setZone] = useState("all");
-  const [menuCat, setMenuCat] = useState("all");
   const [menuSearch, setMenuSearch] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [revenue, setRevenue] = useState(0);
+  const [lastBill, setLastBill] = useState(0);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [nextTableId, setNextTableId] = useState(100);
-
-  // --- form state for modals
   const [form, setForm] = useState({});
 
   const notify = (msg) => {
@@ -83,366 +85,697 @@ export default function RestaurantPOS() {
   };
 
   const currentOrder = selectedTable ? orders[selectedTable] || [] : [];
-
   const setCurrentOrder = (arr) => {
     if (!selectedTable) return;
     setOrders((prev) => ({ ...prev, [selectedTable]: arr }));
   };
 
   const addToOrder = (menuId) => {
-    if (!selectedTable) { notify("⚠️ Pehle table select karein!"); return; }
+    if (!selectedTable) {
+      notify("⚠️ Pehle table select karein!");
+      return;
+    }
     const m = menuItems.find((x) => x.id === menuId);
     if (!m) return;
     const ord = [...currentOrder];
     const ex = ord.find((x) => x.menuId === menuId);
-    if (ex) { ex.qty += 1; setCurrentOrder([...ord]); }
-    else setCurrentOrder([...ord, { menuId, name: m.name, price: m.price, qty: 1, emoji: m.emoji }]);
+    if (ex) {
+      ex.qty += 1;
+      setCurrentOrder([...ord]);
+    } else
+      setCurrentOrder([
+        ...ord,
+        { menuId, name: m.name, price: m.price, qty: 1, emoji: m.emoji },
+      ]);
+    setMenuSearch("");
   };
 
   const changeQty = (menuId, d) => {
-    const ord = currentOrder.map((x) => x.menuId === menuId ? { ...x, qty: Math.max(1, x.qty + d) } : x);
+    const ord = currentOrder.map((x) =>
+      x.menuId === menuId ? { ...x, qty: Math.max(1, x.qty + d) } : x,
+    );
     setCurrentOrder(ord);
   };
 
-  const removeItem = (menuId) => setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
+  const removeItem = (menuId) =>
+    setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
 
   const subtotal = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
   const discAmt = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
   const afterDisc = subtotal - discAmt;
   const gst = afterDisc * 0.05;
   const total = afterDisc + gst;
+  const totalItems = currentOrder.reduce((s, i) => s + i.qty, 0);
 
-  const filteredMenu = useMemo(() =>
-    menuItems.filter((m) =>
-      (menuCat === "all" || m.cat === menuCat) &&
-      (!menuSearch || m.name.toLowerCase().includes(menuSearch.toLowerCase()))
-    ), [menuItems, menuCat, menuSearch]);
+  const filteredMenu = useMemo(
+    () =>
+      menuItems.filter(
+        (m) =>
+          menuSearch && m.name.toLowerCase().includes(menuSearch.toLowerCase()),
+      ),
+    [menuItems, menuSearch],
+  );
 
-  const filteredTables = tables.filter((t) => zone === "all" || t.zone === zone);
-
-  const occupiedCount = tables.filter((t) => (orders[t.id] || []).length > 0).length;
+  const filteredTables = tables.filter(
+    (t) => zone === "all" || t.zone === zone,
+  );
 
   const settleBill = () => {
-    if (!selectedTable) { notify("⚠️ Table select karein!"); return; }
-    if (!currentOrder.length) { notify("⚠️ Order empty hai!"); return; }
-    setRevenue((r) => r + Math.round(total));
+    if (!selectedTable) {
+      notify("⚠️ Select the table");
+      return;
+    }
+    if (!currentOrder.length) {
+      notify("⚠️ Order is empty");
+      return;
+    }
+    setLastBill(Math.round(total));
     setOrders((prev) => ({ ...prev, [selectedTable]: [] }));
     setDiscount(0);
-    notify(`✅ ₹${total.toFixed(0)} Settle ho gaya!`);
+    notify(`✅ ₹${total.toFixed(0)} Settled`);
   };
 
   const printKOT = () => {
-    if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; }
-    notify("🖨️ KOT Print hua!");
+    if (!selectedTable || !currentOrder.length) {
+      notify("⚠️ Order is empty");
+      return;
+    }
+    notify("🖨️ KOT has been sent!");
   };
-
+  const saveKOT = () => {
+    if (!selectedTable || !currentOrder.length) {
+      notify("⚠️ Order is empty");
+      return;
+    }
+    notify("💾 KOT  Saved");
+  };
   const saveBill = () => {
-    if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; }
-    notify("💾 Bill Save hua!");
+    if (!selectedTable || !currentOrder.length) {
+      notify("⚠️ Order is empty");
+      return;
+    }
+    notify("💾 Bill Saved");
   };
-
   const printBill = () => {
-    if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; }
-    notify("🖨️ Bill Print hua!");
+    if (!selectedTable || !currentOrder.length) {
+      notify("⚠️ Order is empty");
+      return;
+    }
+    notify("🖨️ Bill has been Print");
   };
 
-  // --- CRUD modals
-  const openAddTable = () => { setForm({ name: "", zone: "HALL" }); setModal("addTable"); };
-  const openAddMenu = () => { setForm({ name: "", price: "", cat: "veg", emoji: "🍽️" }); setModal("addMenu"); };
-  const openEditMenu = (item) => { setForm({ ...item }); setModal("editMenu"); };
+  const openAddTable = () => {
+    setForm({ name: "", zone: "HALL" });
+    setModal("addTable");
+  };
+  const openAddMenu = () => {
+    setForm({ name: "", price: "", cat: "veg", emoji: "🍽️" });
+    setModal("addMenu");
+  };
+  const openEditMenu = (item) => {
+    setForm({ ...item });
+    setModal("editMenu");
+  };
 
   const handleAddTable = () => {
-    if (!form.name.trim()) { notify("⚠️ Table naam daalein!"); return; }
+    if (!form.name.trim()) {
+      notify("⚠️ Table naam daalein!");
+      return;
+    }
     const id = nextTableId;
     setNextTableId((n) => n + 1);
-    setTables((prev) => [...prev, { id, name: form.name.trim(), zone: form.zone }]);
+    setTables((prev) => [
+      ...prev,
+      { id, name: form.name.trim(), zone: form.zone },
+    ]);
     setModal(null);
-    notify("✅ Table add hua!");
+    notify("✅ Table added");
   };
 
   const handleDeleteTable = (id) => {
     setTables((prev) => prev.filter((t) => t.id !== id));
     if (selectedTable === id) setSelectedTable(null);
-    setOrders((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setOrders((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
     setModal(null);
-    notify("🗑️ Table delete hua!");
+    notify("🗑️ Table deleted");
   };
 
   const handleAddMenu = () => {
-    if (!form.name.trim() || !form.price) { notify("⚠️ Naam aur price daalein!"); return; }
-    setMenuItems((prev) => [...prev, { id: Date.now(), name: form.name.trim(), price: parseFloat(form.price), cat: form.cat, emoji: form.emoji || "🍽️" }]);
+    if (!form.name.trim() || !form.price) {
+      notify("⚠️ Naam aur price daalein!");
+      return;
+    }
+    setMenuItems((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: form.name.trim(),
+        price: parseFloat(form.price),
+        cat: form.cat,
+        emoji: form.emoji || "🍽️",
+      },
+    ]);
     setModal(null);
-    notify("✅ Menu item add hua!");
+    notify("✅ Item added to the menu");
   };
 
   const handleSaveMenu = () => {
-    setMenuItems((prev) => prev.map((m) => m.id === form.id ? { ...form, price: parseFloat(form.price) } : m));
+    setMenuItems((prev) =>
+      prev.map((m) =>
+        m.id === form.id ? { ...form, price: parseFloat(form.price) } : m,
+      ),
+    );
     setModal(null);
-    notify("✅ Menu update hua!");
+    notify("✅ Updated teh Menu");
   };
 
   const handleDeleteMenu = () => {
     setMenuItems((prev) => prev.filter((m) => m.id !== form.id));
     setModal(null);
-    notify("🗑️ Menu item delete hua!");
+    notify("🗑️ Menu item has been deleted");
   };
 
   const selectedTableObj = tables.find((t) => t.id === selectedTable);
 
+  const ZONE_BTNS = [
+    { val: "all", label: "All", cls: "bg-orange-600 text-white" },
+    { val: "HALL", label: "HALL", cls: "bg-green-800 text-white" },
+    { val: "FAMILY", label: "FAMILY", cls: "bg-yellow-700 text-white" },
+    { val: "PARCEL", label: "PARCEL ORDER", cls: "bg-blue-800 text-white" },
+  ];
+
   return (
-    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
-
-      {/* ── LEFT PANEL ── */}
-      <div className="w-80 shrink-8 bg-white border-r border-gray-200 flex flex-col">
-
-        {/* Header */}
-        <Navbar variant="module" moduleName="Billing" />
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 p-3 border-b border-gray-100">
-          <button onClick={printKOT} className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">🖨️ Print KOT</button>
-          <button onClick={saveBill} className="bg-gray-700 hover:bg-gray-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors">💾 Save Bill</button>
-          <button onClick={settleBill} className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors">✅ Settle Bill</button>
-          <button onClick={printBill} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors">🖨️ Print Bill</button>
-        </div>
-
-        {/* Menu Search */}
-        <div className="px-3 pt-3 pb-2">
-          <input
-            type="text"
-            placeholder="Menu search karein..."
-            value={menuSearch}
-            onChange={(e) => setMenuSearch(e.target.value)}
-            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-emerald-500 bg-gray-50"
-          />
-        </div>
-
-        {/* Category Tabs */}
-        <div className="flex gap-1.5 px-3 pb-2 flex-wrap">
-          {[["all", "All"], ["veg", "🌿 Veg"], ["nonveg", "🍗 Non-Veg"], ["drink", "🥤 Drinks"]].map(([val, label]) => (
+    <>
+      <div
+        className="flex h-screen overflow-hidden"
+        style={{
+          fontFamily: "Arial, sans-serif",
+          background: "#f0f0e8",
+          fontSize: "13px",
+        }}
+      >
+        {/* ── LEFT PANEL ── */}
+        <div
+          className="flex flex-col border-r-2 border-gray-400"
+          style={{ width: "50%", background: "#f0f0e8" }}
+        >
+          {/* Top Bar */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1.5"
+            style={{ background: "#1a1a1a" }}
+          >
             <button
-              key={val}
-              onClick={() => setMenuCat(val)}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors ${menuCat === val ? "bg-emerald-700 text-white border-emerald-700" : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400"}`}
+              className="text-white px-2 py-1.5 rounded text-base"
+              style={{ background: "#444" }}
             >
-              {label}
+              ☰
             </button>
-          ))}
-        </div>
+            <input
+              value={selectedTableObj ? selectedTableObj.name : ""}
+              readOnly
+              placeholder="Table"
+              className="rounded px-2 py-1 text-sm outline-none text-gray-800"
+              style={{ width: "130px", height: "32px", background: "#fff" }}
+            />
+            <input
+              placeholder="Captain"
+              className="rounded px-2 py-1 text-sm outline-none text-gray-800"
+              style={{ width: "130px", height: "32px", background: "#fff" }}
+            />
+            <div className="flex-1" />
+            <button
+              onClick={openAddMenu}
+              className="text-white text-xs px-2 py-1 rounded"
+              style={{ background: "#444" }}
+            >
+              + Menu
+            </button>
+            <button
+              onClick={openAddTable}
+              className="text-white text-xs px-2 py-1 rounded"
+              style={{ background: "#e8a020" }}
+            >
+              + Table
+            </button>
+          </div>
 
-        {/* Menu List */}
-        <div className="flex-1 overflow-y-auto px-3 pb-2 space-y-1">
-          {filteredMenu.map((m) => (
-            <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/50 transition-colors group">
-              <span className="text-base">{m.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-800 truncate">{m.name}</p>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${CAT_BADGE[m.cat]}`}>{m.cat}</span>
+          {/* Search */}
+          <div
+            className="flex gap-1.5 px-2 py-1.5"
+            style={{ background: "#f0f0e8" }}
+          >
+            <input
+              type="text"
+              placeholder="Search by Code/Barcode/Name"
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.target.value)}
+              className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none"
+              style={{ background: "#fff" }}
+            />
+            <button
+              className="text-white px-3 rounded text-sm"
+              style={{ background: "#cc2222" }}
+            >
+              🔍
+            </button>
+          </div>
+
+          {/* Column Headers */}
+          <div
+            className="grid gap-1 px-2 pb-1"
+            style={{ gridTemplateColumns: "1fr 100px 80px" }}
+          >
+            {["Item Name", "Qty  ·  Price", "Total"].map((h) => (
+              <div
+                key={h}
+                className="border border-gray-400 rounded text-center py-1 text-xs text-gray-600"
+                style={{ background: "#fff" }}
+              >
+                {h}
               </div>
-              <span className="text-xs font-semibold text-emerald-700">₹{m.price}</span>
-              <button onClick={() => openEditMenu(m)} className="text-gray-300 hover:text-gray-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">✎</button>
-              <button onClick={() => addToOrder(m.id)} className="w-6 h-6 bg-emerald-700 text-white rounded-md text-sm flex items-center justify-center hover:bg-emerald-800 shrink-0">+</button>
-            </div>
-          ))}
-          {filteredMenu.length === 0 && <p className="text-center text-gray-400 text-xs py-6">Koi item nahi mila</p>}
-        </div>
+            ))}
+          </div>
 
-        {/* Order Summary */}
-        <div className="border-t border-gray-200">
-          <div className="max-h-36 overflow-y-auto">
-            {currentOrder.length === 0 ? (
-              <p className="text-center text-gray-400 text-xs py-4">Koi order nahi</p>
+          {/* Search Results or Order List */}
+          <div className="flex-1 overflow-y-auto px-2 pb-1 space-y-0.5">
+            {menuSearch ? (
+              filteredMenu.length === 0 ? (
+                <div className="text-center py-6 text-gray-400 text-xs">
+                  No items
+                </div>
+              ) : (
+                filteredMenu.map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => addToOrder(m.id)}
+                    className="grid gap-1 cursor-pointer hover:bg-yellow-50 rounded border border-gray-200"
+                    style={{ gridTemplateColumns: "1fr 100px 80px" }}
+                  >
+                    <div className="px-2 py-1.5 text-xs flex items-center gap-1 bg-white rounded-l">
+                      <span>{m.emoji}</span>
+                      <span className="font-medium">{m.name}</span>
+                    </div>
+                    <div className="px-2 py-1.5 text-xs text-center bg-white text-gray-600">
+                      ₹{m.price}
+                    </div>
+                    <div className="px-2 py-1.5 text-xs text-center bg-white rounded-r font-bold text-green-800">
+                      +
+                    </div>
+                  </div>
+                ))
+              )
+            ) : currentOrder.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 text-xs">
+                No orders, search for items
+              </div>
             ) : (
               currentOrder.map((item) => (
-                <div key={item.menuId} className="flex items-center gap-1.5 px-3 py-1.5 border-b border-gray-50 text-xs">
-                  <span>{item.emoji}</span>
-                  <span className="flex-1 text-gray-700 font-medium truncate">{item.name}</span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => changeQty(item.menuId, -1)} className="w-5 h-5 border border-gray-200 rounded text-center hover:bg-gray-100 flex items-center justify-center">−</button>
-                    <span className="w-5 text-center font-semibold">{item.qty}</span>
-                    <button onClick={() => changeQty(item.menuId, 1)} className="w-5 h-5 border border-gray-200 rounded text-center hover:bg-gray-100 flex items-center justify-center">+</button>
+                <div
+                  key={item.menuId}
+                  className="grid gap-1"
+                  style={{ gridTemplateColumns: "1fr 100px 80px" }}
+                >
+                  <div
+                    className="px-2 py-1.5 text-xs flex items-center gap-1 border border-gray-300 rounded-l"
+                    style={{ background: "#fff" }}
+                  >
+                    <button
+                      onClick={() => removeItem(item.menuId)}
+                      className="text-red-600 font-bold text-sm leading-none"
+                    >
+                      ×
+                    </button>
+                    <span>{item.emoji}</span>
+                    <span className="truncate">{item.name}</span>
                   </div>
-                  <span className="text-emerald-700 font-semibold w-12 text-right">₹{item.price * item.qty}</span>
-                  <button onClick={() => removeItem(item.menuId)} className="text-red-400 hover:text-red-600 ml-1">×</button>
+                  <div
+                    className="flex items-center justify-center gap-1 border border-gray-300 text-xs"
+                    style={{ background: "#fff" }}
+                  >
+                    <button
+                      onClick={() => changeQty(item.menuId, -1)}
+                      className="w-5 h-5 rounded text-white text-xs flex items-center justify-center"
+                      style={{ background: "#555" }}
+                    >
+                      −
+                    </button>
+                    <span className="font-bold w-5 text-center">
+                      {item.qty}
+                    </span>
+                    <button
+                      onClick={() => changeQty(item.menuId, 1)}
+                      className="w-5 h-5 rounded text-white text-xs flex items-center justify-center"
+                      style={{ background: "#555" }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div
+                    className="flex items-center justify-center border border-gray-300 rounded-r text-xs font-bold text-green-800"
+                    style={{ background: "#fff" }}
+                  >
+                    ₹{item.price * item.qty}
+                  </div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Bill Footer */}
-          <div className="px-3 py-3 space-y-1">
-            <div className="flex justify-between text-xs text-gray-500"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-            <div className="flex items-center justify-between text-xs text-gray-500">
+          {/* Bill Summary */}
+          <div
+            className="px-3 py-2 border-t-2 border-gray-400 space-y-1"
+            style={{ background: "#f0f0e8" }}
+          >
+            <div className="flex justify-between text-xs text-gray-700">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-700">
               <span>Discount</span>
               <div className="flex items-center gap-1">
                 <input
-                  type="number" min="0" max="100" value={discount}
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={discount}
                   onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                  className="w-12 text-xs border border-gray-200 rounded px-1.5 py-0.5 text-center outline-none focus:border-emerald-400"
+                  className="w-10 text-xs border border-gray-400 rounded px-1 py-0.5 text-center outline-none"
+                  style={{ background: "#fff" }}
                 />
                 <span>%</span>
-                <span className="text-red-500">-₹{discAmt.toFixed(2)}</span>
+                <span className="text-red-600">-₹{discAmt.toFixed(2)}</span>
               </div>
             </div>
-            <div className="flex justify-between text-xs text-gray-500"><span>GST (5%)</span><span>₹{gst.toFixed(2)}</span></div>
-            <div className="flex justify-between text-sm font-bold text-gray-800 pt-1 border-t border-gray-100">
-              <span>Total</span><span className="text-emerald-700">₹{total.toFixed(2)}</span>
+            <div className="flex justify-between text-xs text-gray-700">
+              <span>GST (5%)</span>
+              <span>₹{gst.toFixed(2)}</span>
             </div>
-            <button onClick={settleBill} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm py-2.5 rounded-xl mt-1 transition-colors">
+            <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-400 pt-1">
+              <span>Total</span>
+              <span className="text-green-800">₹{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Pay Bar */}
+          <div
+            className="flex items-stretch"
+            style={{ background: "#1a7a4a", minHeight: "44px" }}
+          >
+            <button
+              className="text-white text-xs px-3 font-semibold border-r border-green-700 whitespace-nowrap"
+              style={{ background: "#2255aa" }}
+            >
+              Last Bill ₹{lastBill.toFixed(2)}
+            </button>
+            <div className="flex-1 flex items-center justify-center text-white text-xs font-bold">
+              ITEMS : {totalItems}
+            </div>
+            <button
+              onClick={settleBill}
+              className="text-white text-sm font-bold px-4 border-l border-green-700 hover:bg-green-700"
+            >
               PAY ₹{total.toFixed(2)} →
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Top Bar */}
-        <div className="bg-emerald-800 text-white px-5 py-3 flex items-center gap-3">
-        
-          <span className="text-lg">🍴</span>
-          <span className="font-bold text-base tracking-wide">Restaurant POS</span>
-          <div className="flex-1" />
-          <button onClick={openAddMenu} className="text-xs border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">+ Menu Item</button>
-          <button onClick={openAddTable} className="text-xs border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">+ Table</button>
-        </div>
-
-        {/* Summary Bar */}
-        <div className="grid grid-cols-4 gap-3 px-5 py-3 bg-white border-b border-gray-200">
-          {[
-            { label: "Total Tables", value: tables.length, color: "text-gray-800" },
-            { label: "Occupied", value: occupiedCount, color: "text-red-600" },
-            { label: "Free", value: tables.length - occupiedCount, color: "text-emerald-600" },
-            { label: "Today Revenue", value: `₹${revenue.toLocaleString("en-IN")}`, color: "text-emerald-700" },
-          ].map((s) => (
-            <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Zone Filter */}
-        <div className="flex gap-2 px-5 py-3 bg-white border-b border-gray-100">
-          {[["all", "🏠 All"], ["HALL", "🪑 Hall"], ["FAMILY", "👨‍👩‍👧 Family"], ["PARCEL", "📦 Parcel"]].map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setZone(val)}
-              className={`text-xs px-4 py-1.5 rounded-full border font-medium transition-colors ${zone === val ? "bg-emerald-700 text-white border-emerald-700" : "bg-white text-gray-600 border-gray-200 hover:border-emerald-300"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tables Grid */}
-        <div className="flex-1 overflow-y-auto p-5">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-3">
-            {filteredTables.map((t) => {
-              const ord = orders[t.id] || [];
-              const tTotal = ord.reduce((s, i) => s + i.price * i.qty, 0);
-              const isOcc = ord.length > 0;
-              const isSel = selectedTable === t.id;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => setSelectedTable(t.id)}
-                  className={`relative rounded-xl p-3 text-center cursor-pointer border-2 transition-all select-none
-                    ${isOcc ? "bg-red-600 border-red-600 text-white hover:bg-red-700" : "bg-white border-gray-200 hover:border-emerald-400 text-gray-700"}
-                    ${isSel ? "ring-2 ring-offset-1 ring-emerald-500 scale-105 shadow-lg" : "hover:scale-[1.02]"}
-                  `}
-                >
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOcc ? "text-red-100" : "text-gray-400"}`}>{t.zone}</span>
-                  <p className="text-sm font-bold mt-0.5">{t.name}</p>
-                  {isOcc
-                    ? <p className="text-xs text-red-100 mt-1 font-semibold">₹{tTotal}</p>
-                    : <p className="text-[10px] text-gray-300 mt-1">Free</p>
-                  }
-                  {isOcc && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full opacity-70" />}
-                </div>
-              );
-            })}
-          </div>
-          {filteredTables.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-              <span className="text-3xl mb-2">🪑</span>
-              <p className="text-sm">Is zone mein koi table nahi</p>
-            </div>
-          )}
-          <div className="mt-40">
-             <BackButton to="/dashboard" /> 
-          </div>
-         
-        </div>
-        
-      </div>
-
-      
-
-      {/* ── MODALS ── */}
-
-      {modal === "addTable" && (
-        <Modal title="Naya Table Add Karein" onClose={() => setModal(null)}>
-          <input
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500"
-            placeholder="Table naam (e.g. Table 50)"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <select
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:border-emerald-500 bg-white"
-            value={form.zone}
-            onChange={(e) => setForm({ ...form, zone: e.target.value })}
+        {/* ── RIGHT PANEL ── */}
+        <div
+          className="flex-1 flex flex-col overflow-hidden"
+          style={{ background: "#f0f0e8" }}
+        >
+          {/* Action Buttons */}
+          <div
+            className="grid gap-1.5 p-2"
+            style={{
+              background: "#1a1a1a",
+              gridTemplateColumns: "1fr 1fr 1fr",
+            }}
           >
-            <option value="HALL">Hall</option>
-            <option value="FAMILY">Family</option>
-            <option value="PARCEL">Parcel</option>
-          </select>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button onClick={handleAddTable} className="px-4 py-2 text-sm bg-emerald-700 text-white rounded-lg hover:bg-emerald-800">Add Table</button>
+            <button
+              onClick={printKOT}
+              className="text-white text-sm font-bold py-2.5 rounded"
+              style={{ background: "#2a2a2a" }}
+            >
+              🖨️ Print KOT
+            </button>
+            <button
+              onClick={saveBill}
+              className="text-white text-sm font-bold py-2.5 rounded"
+              style={{ background: "#2a2a2a" }}
+            >
+              💾 Save Bill
+            </button>
+            <button
+              onClick={printBill}
+              className="text-white text-sm font-bold py-2.5 rounded"
+              style={{ background: "#6633aa" }}
+            >
+              🖨️ Print Bill
+            </button>
+            <button
+              onClick={saveKOT}
+              className="text-white text-sm font-bold py-2.5 rounded"
+              style={{ background: "#2a2a2a" }}
+            >
+              💾 Save KOT
+            </button>
+            <button
+              onClick={settleBill}
+              className="text-white text-sm font-bold py-2.5 rounded col-span-2"
+              style={{ background: "#1a7a4a" }}
+            >
+              ✅ Settle Bill
+            </button>
           </div>
-        </Modal>
-      )}
 
-      {modal === "addMenu" && (
-        <Modal title="Naya Menu Item Add Karein" onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" placeholder="Item naam" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" type="number" placeholder="Price (₹)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" placeholder="Emoji (e.g. 🍛)" value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} />
-          <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:border-emerald-500 bg-white" value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })}>
-            <option value="veg">Veg</option>
-            <option value="nonveg">Non-Veg</option>
-            <option value="drink">Drink</option>
-          </select>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button onClick={handleAddMenu} className="px-4 py-2 text-sm bg-emerald-700 text-white rounded-lg hover:bg-emerald-800">Add Item</button>
+          {/* Zone Filter */}
+          <div
+            className="flex gap-2 px-3 py-2 border-b-2 border-gray-400"
+            style={{ background: "#f0f0e8" }}
+          >
+            {ZONE_BTNS.map(({ val, label, cls }) => (
+              <button
+                key={val}
+                onClick={() => setZone(val)}
+                className={`text-xs px-4 py-1.5 rounded font-bold transition-opacity ${zone === val ? cls : "bg-gray-300 text-gray-600"}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        </Modal>
-      )}
 
-      {modal === "editMenu" && (
-        <Modal title="Menu Item Edit Karein" onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 outline-none focus:border-emerald-500" value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} />
-          <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:border-emerald-500 bg-white" value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })}>
-            <option value="veg">Veg</option>
-            <option value="nonveg">Non-Veg</option>
-            <option value="drink">Drink</option>
-          </select>
-          <div className="flex items-center gap-2">
-            <button onClick={handleDeleteMenu} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 mr-auto">Delete</button>
-            <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button onClick={handleSaveMenu} className="px-4 py-2 text-sm bg-emerald-700 text-white rounded-lg hover:bg-emerald-800">Save</button>
+          {/* Tables Grid */}
+          <div className="flex-1 overflow-y-auto p-3">
+            <div
+              className="grid gap-2"
+              style={{
+                gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+              }}
+            >
+              {filteredTables.map((t) => {
+                const ord = orders[t.id] || [];
+                const tTotal = ord.reduce((s, i) => s + i.price * i.qty, 0);
+                const isOcc = ord.length > 0;
+                const isSel = selectedTable === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setSelectedTable(t.id)}
+                    className="rounded-md text-center cursor-pointer select-none transition-transform hover:scale-105"
+                    style={{
+                      border: isSel ? "3px solid #ffaa00" : "2px solid #bbb",
+                      background: isOcc ? "#bb2222" : "#f5f5f0",
+                      color: isOcc ? "#fff" : "#333",
+                      padding: "8px 6px",
+                      transform: isSel ? "scale(1.05)" : undefined,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "9px",
+                        color: isOcc ? "#ffcccc" : "#888",
+                        fontWeight: "bold",
+                        letterSpacing: ".5px",
+                      }}
+                    >
+                      {t.zone}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        margin: "2px 0",
+                      }}
+                    >
+                      {t.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        color: isOcc ? "#ffcccc" : "#aaa",
+                      }}
+                    >
+                      {isOcc ? `₹${tTotal}` : "Free"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {filteredTables.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                <span className="text-2xl mb-2">🪑</span>
+                <p className="text-xs">No table available in this zone</p>
+              </div>
+            )}
+            <div className="mt-56">
+              <BackButton to="/dashboard" />
+            </div>
           </div>
-        </Modal>
-      )}
+        </div>
 
-      {/* Toast */}
-      {toast && <Toast msg={toast} />}
-    </div>
+        {/* ── MODALS ── */}
+        {modal === "addTable" && (
+          <Modal title="Add a new table" onClose={() => setModal(null)}>
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              placeholder="Table naam"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white"
+              value={form.zone}
+              onChange={(e) => setForm({ ...form, zone: e.target.value })}
+            >
+              <option value="HALL">Hall</option>
+              <option value="FAMILY">Family</option>
+              <option value="PARCEL">Parcel</option>
+            </select>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setModal(null)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddTable}
+                className="px-3 py-1.5 text-sm text-white rounded"
+                style={{ background: "#1a7a4a" }}
+              >
+                Add
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {modal === "addMenu" && (
+          <Modal title="Naya Menu Item" onClose={() => setModal(null)}>
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              placeholder="Item naam"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              type="number"
+              placeholder="Price (₹)"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              placeholder="Emoji"
+              value={form.emoji}
+              onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+            />
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white"
+              value={form.cat}
+              onChange={(e) => setForm({ ...form, cat: e.target.value })}
+            >
+              <option value="veg">Veg</option>
+              <option value="nonveg">Non-Veg</option>
+              <option value="drink">Drink</option>
+            </select>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setModal(null)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMenu}
+                className="px-3 py-1.5 text-sm text-white rounded"
+                style={{ background: "#1a7a4a" }}
+              >
+                Add
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {modal === "editMenu" && (
+          <Modal title="Menu Item Edit" onClose={() => setModal(null)}>
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              type="number"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none"
+              value={form.emoji}
+              onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+            />
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white"
+              value={form.cat}
+              onChange={(e) => setForm({ ...form, cat: e.target.value })}
+            >
+              <option value="veg">Veg</option>
+              <option value="nonveg">Non-Veg</option>
+              <option value="drink">Drink</option>
+            </select>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDeleteMenu}
+                className="px-3 py-1.5 text-sm text-white rounded mr-auto"
+                style={{ background: "#cc2222" }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setModal(null)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveMenu}
+                className="px-3 py-1.5 text-sm text-white rounded"
+                style={{ background: "#1a7a4a" }}
+              >
+                Save
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {toast && <Toast msg={toast} />}
+      </div>
+    </>
   );
 }
