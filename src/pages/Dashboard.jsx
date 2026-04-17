@@ -45,19 +45,19 @@ export default function Dashboard() {
               <div
                 key={card.title}
                 onClick={() => navigate(card.path)}   // 🔥 routing here
-                className="bg-white/5 backdrop-blur-sm border border-white/30 
+                className="bg-white/5 backdrop-blur-lg border border-white/30 
                 rounded-2xl p-6 cursor-pointer 
                 hover:scale-[1.03] hover:shadow-2xl 
                 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{card.icon}</span>
-                  <p className="text-lg font-semibold text-white">
+                  <p className="text-2xl font-semibold text-white">
                     {card.title}
                   </p>
                 </div>
 
-                <p className="text-sm text-gray-200 mt-2">
+                <p className="text-1xl text-gray-200 mt-2">
                   {card.desc}
                 </p>
 

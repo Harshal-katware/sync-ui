@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import BackButton from "../components/BackButton";
+import Navbar from "../components/Navbar";
  
 // ─── Dummy seed data ───────────────────────────────────────────────────────────
 const SEED_ITEMS = [
@@ -145,28 +146,8 @@ export default function InventoryManagement() {
  
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
  
-      {/* ══ NAVBAR ══════════════════════════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-40 border-b border-gray-200 "
-           style={{ background:"rgba(250,249,246,.95)", backdropFilter:"blur(12px)" }}>
-        <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 ">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-base text-[20px]"
-                 style={{ background:"linear-gradient(135deg,#d97706,#b45309)" }}>H</div>
-            <div className="leading-tight">
-              <p className="text-2xl uppercase tracking-widest font-serif text-white" >
-                Hotel Management
-              </p>
-              <p className=" mt-1 font-black leading-none" style={{ fontFamily:"serif", fontSize:"1.1rem", color:"#d8d8d7" }}>
-                Inventory Control
-              </p>
-            </div>
-          </div>
- 
-        </div>
-      </nav>
- 
-      {/* ══ TAB BAR (separate from navbar) ═════════════════════════════════════ */}
+       {/* NAVBAR */}
+   <Navbar variant="module" moduleName="Inventory Control" />
       <div className="bg-white border-b border-gray-200 shadow-sm mt-1">
         <div className="w-full px-6 flex">
           {[

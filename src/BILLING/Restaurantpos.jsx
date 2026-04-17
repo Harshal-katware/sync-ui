@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import BackButton from "../components/BackButton";
+import Navbar from "../components/Navbar";
 
 const MENU_ITEMS = [
   { id: 1, name: "Butter Milk", price: 30, cat: "drink", emoji: "🥛" },
@@ -195,17 +196,7 @@ export default function RestaurantPOS() {
       <div className="w-80 shrink-8 bg-white border-r border-gray-200 flex flex-col">
 
         {/* Header */}
-        <div className="bg-emerald-800 text-white px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🍽️</span>
-            <div>
-              <p className="font-semibold text-sm">{selectedTableObj ? selectedTableObj.name : "Table select karein"}</p>
-              {selectedTableObj && (
-                <span className="text-xs text-emerald-300">{selectedTableObj.zone}</span>
-              )}
-            </div>
-          </div>
-        </div>
+        <Navbar variant="module" moduleName="Billing" />
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2 p-3 border-b border-gray-100">
