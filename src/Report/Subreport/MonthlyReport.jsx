@@ -110,7 +110,7 @@ export default function MonthlyReport() {
             <BarChart data={barData}>
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
+              <Tooltip cursor={false} />
               <Bar dataKey="qty" fill="#7c3aed" radius={[6,6,0,0]} />
             </BarChart>
           </ResponsiveContainer>

@@ -46,15 +46,15 @@ export default function DailyUpdate() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold text-gray-800 font-serif">
             Today Report
           </h1>
-          <p className="text-gray-500">{today}</p>
+          <p className="text-gray-800">{today}</p>
         </div>
 
         <button
           onClick={downloadPDF}
-          className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-lg shadow hover:scale-105 transition"
+          className="px-4 py-2 bg-linear-to-r bg-emerald-700 text-white rounded-lg shadow hover:scale-105 transition"
         >
           Export
         </button>
@@ -78,7 +78,7 @@ export default function DailyUpdate() {
           <h2 className="text-xl font-bold text-red-500">₹{data.refund}</h2>
         </div>
 
-        <div className="bg-linear-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl shadow">
+        <div className="bg-linear-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl shadow">
           <p className="text-sm">Net Sales</p>
           <h2 className="text-xl font-bold">₹{net}</h2>
           <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">

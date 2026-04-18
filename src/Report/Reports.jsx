@@ -13,11 +13,11 @@ export default function Reports() {
   ];
 
   return (
-    <div className="h-screen flex bg-linear-to-br from-[#59d17d] to-[#42a152] p-5">
+    <div className="h-screen flex bg-linear-to-br from-[#c9cdca] to-[#b3e4bb] p-5">
 
       {/* Sidebar */}
-      <aside className="w-64 bg-[#2e2545]/95 backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col">
-        <h1 className="text-2xl font-bold mb-10 tracking-wide">
+      <aside className="w-64 bg-emerald-700 backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col">
+        <h1 className="text-2xl font-bold mb-10 tracking-wide font-serif">
           Reports
         </h1>
 
@@ -30,7 +30,7 @@ export default function Reports() {
                 key={i}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all
-                  ${active ? "bg-white/20 text-white font-semibold" : "text-gray-300 hover:bg-white/10"}`}
+                  ${active ? "bg-white/20 text-white font-semibold" : "text-white hover:bg-white/20"}`}
               >
                 <Icon size={18} />
                 {item.name}

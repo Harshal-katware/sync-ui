@@ -16,12 +16,12 @@ export default function TopSellingProducts() {
     { name: "Sandwich", qty: 25, revenue: 5000 },
   ];
 
-  // 🔥 Filter
+  //  Filter
   let filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // 🔥 Sort
+  //  Sort
   filtered = [...filtered].sort((a, b) =>
     sort === "high" ? b.qty - a.qty : a.qty - b.qty
   );
@@ -55,11 +55,11 @@ export default function TopSellingProducts() {
 
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Top Products</h1>
+        <h1 className="text-2xl font-bold font-serif">Top Products</h1>
 
         <button
           onClick={downloadPDF}
-          className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-lg shadow"
+          className="px-4 py-2 bg-linear-to-r from-emerald-500 to-emerald-600 text-white rounded-lg shadow"
         >
           Export
         </button>
@@ -78,7 +78,7 @@ export default function TopSellingProducts() {
           <h2 className="font-bold text-green-600">₹{totalRevenue}</h2>
         </div>
 
-        <div className="bg-linear-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl">
+        <div className="bg-linear-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl">
           <p>Top Product</p>
           <h2 className="font-bold">{topProduct}</h2>
         </div>
@@ -131,7 +131,7 @@ export default function TopSellingProducts() {
               <BarChart data={filtered}>
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip cursor={false} />
                 <Bar dataKey="qty" fill="#7c3aed" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>

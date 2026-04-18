@@ -1,10 +1,15 @@
 import { useState } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 export default function Customization() {
-
   const [payment, setPayment] = useState("all");
   const [orderType, setOrderType] = useState("all");
   const [show, setShow] = useState(false);
@@ -16,9 +21,10 @@ export default function Customization() {
     { name: "Sandwich", qty: 25, revenue: 5000, payment: "UPI", type: "dine-in" },
   ];
 
-  const filtered = data.filter((item) =>
-    (payment === "all" || item.payment === payment) &&
-    (orderType === "all" || item.type === orderType)
+  const filtered = data.filter(
+    (item) =>
+      (payment === "all" || item.payment === payment) &&
+      (orderType === "all" || item.type === orderType)
   );
 
   const totalSales = filtered.reduce((acc, i) => acc + i.revenue, 0);
@@ -26,6 +32,8 @@ export default function Customization() {
 
   const topProduct =
     [...filtered].sort((a, b) => b.qty - a.qty)[0]?.name || "-";
+
+  const maxValue = Math.max(...filtered.map((i) => i.revenue), 1); // safe
 
   const resetFilters = () => {
     setPayment("all");
@@ -48,7 +56,6 @@ export default function Customization() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-xl shadow-sm space-y-4">
-
         <div className="grid grid-cols-2 gap-4">
 
           <select
@@ -90,16 +97,14 @@ export default function Customization() {
             Reset
           </button>
         </div>
-
       </div>
 
       {/* RESULT */}
       {show && (
         <>
-          {/* Empty State */}
           {filtered.length === 0 && (
             <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
-              No data found for selected filters ❌
+              No data found ❌
             </div>
           )}
 
@@ -118,14 +123,14 @@ export default function Customization() {
                   <h2 className="font-bold">{totalQty}</h2>
                 </div>
 
-                <div className="bg-linear-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl shadow">
+                <div className="bg-linear-to-r from-emerald-500 to-emerald-600 text-white p-5 rounded-xl shadow">
                   <p>Top Product</p>
                   <h2 className="font-bold">{topProduct}</h2>
                 </div>
 
               </div>
 
-              {/* 🔥 Real Chart */}
+              {/* 🔥 Dynamic Color Chart */}
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <p className="mb-3 font-semibold">Sales Chart</p>
 
@@ -133,8 +138,25 @@ export default function Customization() {
                   <BarChart data={filtered}>
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="revenue" fill="#7c3aed" />
+                    <Tooltip cursor={false} />
+
+                    <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                      {filtered.map((entry, index) => {
+                        const intensity = entry.revenue / maxValue;
+
+                        return (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.revenue === maxValue
+                                ? "#6d28d9" // 🔥 top product highlight
+                                : `rgba(124,58,237, ${0.3 + intensity})`
+                            }
+                          />
+                        );
+                      })}
+                    </Bar>
+
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -181,7 +203,6 @@ export default function Customization() {
           )}
         </>
       )}
-
     </div>
   );
 }
