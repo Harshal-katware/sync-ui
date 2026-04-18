@@ -1,132 +1,178 @@
-import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/Navbar";
-import BackButton from "../../components/BackButton";
+import { useState } from "react";
 import jsPDF from "jspdf";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from "recharts";
 
 export default function TopSellingProducts() {
-  const navigate = useNavigate();
 
-  const today = new Date().toLocaleDateString();
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("high");
 
   const products = [
     { name: "Pizza", qty: 50, revenue: 10000 },
     { name: "Burger", qty: 40, revenue: 8000 },
     { name: "Pasta", qty: 30, revenue: 6000 },
-    { name: "Sandwich", qty: 20, revenue: 4000 },
-    { name: "Cold Coffee", qty: 15, revenue: 3000 },
+    { name: "Sandwich", qty: 25, revenue: 5000 },
   ];
 
-  //  Sorting (top first)
-  const sorted = [...products].sort((a, b) => b.qty - a.qty);
+  // 🔥 Filter
+  let filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const totalQty = products.reduce((acc, p) => acc + p.qty, 0);
-  const totalRevenue = products.reduce((acc, p) => acc + p.revenue, 0);
+  // 🔥 Sort
+  filtered = [...filtered].sort((a, b) =>
+    sort === "high" ? b.qty - a.qty : a.qty - b.qty
+  );
 
-  // PDF
+  const totalQty = filtered.reduce((a, b) => a + b.qty, 0);
+  const totalRevenue = filtered.reduce((a, b) => a + b.revenue, 0);
+  const topProduct = filtered[0]?.name || "-";
+
+  const reset = () => {
+    setSearch("");
+    setSort("high");
+  };
+
   const downloadPDF = () => {
     const doc = new jsPDF();
+    doc.text("Top Products Report", 20, 20);
 
-    doc.text("Top Selling Products - Today", 20, 20);
-    doc.text(`Date: ${today}`, 20, 30);
-
-    sorted.forEach((p, i) => {
+    filtered.forEach((p, i) => {
       doc.text(
-        `${i + 1}. ${p.name} - ${p.qty} sold - ₹${p.revenue}`,
+        `${p.name} - ${p.qty} sold - ₹${p.revenue}`,
         20,
-        50 + i * 10
+        40 + i * 10
       );
     });
-
-    doc.text(`Total Items Sold: ${totalQty}`, 20, 120);
-    doc.text(`Total Revenue: ₹${totalRevenue}`, 20, 130);
 
     doc.save("top-products.pdf");
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
-      <Navbar variant="module" moduleName="Reports" />
-      
-      <div className="flex-1 overflow-y-auto">
-      <div className="p-6 max-w-5xl mx-auto">
+    <div className="space-y-6">
 
-        {/* Title */}
-        <h1 className="text-2xl font-bold mb-2">
-          Top Selling Products (Today)
-        </h1>
-        <p className="text-gray-500 mb-6">{today}</p>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Top Products</h1>
 
-        {/*  Summary */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white p-4 rounded shadow">
-            <p>Total Items Sold</p>
-            <p className="text-xl font-bold">{totalQty}</p>
-          </div>
-
-          <div className="bg-white p-4 rounded shadow">
-            <p>Total Revenue</p>
-            <p className="text-xl font-bold">₹{totalRevenue}</p>
-          </div>
-        </div>
-
-        {/*  Top 3 Highlight */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {sorted.slice(0, 3).map((p, i) => (
-            <div
-              key={i}
-              className="bg-yellow-100 p-4 rounded shadow text-center"
-            >
-              <p className="font-bold">#{i + 1}</p>
-              <p>{p.name}</p>
-              <p>{p.qty} sold</p>
-            </div>
-          ))}
-        </div>
-
-        {/*  Table */}
-        <div className="bg-white p-6 rounded shadow mb-6">
-          <h2 className="font-semibold mb-4">
-            Product Performance
-          </h2>
-
-          <table className="w-full">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="p-2">Rank</th>
-                <th className="p-2">Product</th>
-                <th className="p-2">Qty Sold</th>
-                <th className="p-2">Revenue</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sorted.map((p, i) => (
-                <tr key={i} className="border-b">
-                  <td className="p-2 font-bold">#{i + 1}</td>
-                  <td className="p-2">{p.name}</td>
-                  <td className="p-2">{p.qty}</td>
-                  <td className="p-2">₹{p.revenue}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* PDF */}
         <button
           onClick={downloadPDF}
-          className="px-4 py-2 bg-green-500 text-white rounded"
+          className="px-4 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-lg shadow"
         >
-          📄 Download Report
+          Export
+        </button>
+      </div>
+
+      {/* Cards */}
+      <div className="grid grid-cols-3 gap-4">
+
+        <div className="bg-white p-5 rounded-xl shadow-sm">
+          <p>Total Items</p>
+          <h2 className="font-bold">{totalQty}</h2>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl shadow-sm">
+          <p>Total Revenue</p>
+          <h2 className="font-bold text-green-600">₹{totalRevenue}</h2>
+        </div>
+
+        <div className="bg-linear-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl">
+          <p>Top Product</p>
+          <h2 className="font-bold">{topProduct}</h2>
+        </div>
+
+      </div>
+
+      {/* Controls */}
+      <div className="bg-white p-4 rounded-xl shadow-sm flex gap-3">
+
+        <input
+          type="text"
+          placeholder="Search product..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 border p-2 rounded-lg"
+        />
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="border p-2 rounded-lg"
+        >
+          <option value="high">Top Selling</option>
+          <option value="low">Low Selling</option>
+        </select>
+
+        <button
+          onClick={reset}
+          className="px-3 bg-gray-200 rounded-lg"
+        >
+          Reset
         </button>
 
       </div>
-      </div>
-      <div className="p-6">
-        <div className="fixed bottom-0 left-0 p-3 sm:p-4">
-          <BackButton to="/reports" />
+
+      {/* Empty */}
+      {filtered.length === 0 && (
+        <div className="bg-white p-6 rounded-xl text-center text-gray-500">
+          No products found ❌
         </div>
-      </div>
+      )}
+
+      {filtered.length > 0 && (
+        <>
+          {/* 🔥 Real Chart */}
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <p className="mb-3 font-semibold">Sales Chart</p>
+
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={filtered}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="qty" fill="#7c3aed" radius={[6,6,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl shadow-sm">
+
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left">Product</th>
+                  <th className="p-3 text-left">Qty</th>
+                  <th className="p-3 text-left">Revenue</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filtered.map((p, i) => (
+                  <tr
+                    key={i}
+                    className={`border-t ${
+                      p.name === topProduct
+                        ? "bg-purple-50 font-semibold"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="p-3">{p.name}</td>
+                    <td className="p-3">{p.qty}</td>
+                    <td className="p-3 text-green-600">
+                      ₹{p.revenue}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
