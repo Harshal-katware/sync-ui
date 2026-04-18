@@ -31,9 +31,18 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="relative z-10">
-        <Navbar variant="dashboard" />
+      
 
-        <div className="p-8 max-w-5xl">
+        <Navbar
+          variant="dashboard"
+          appName="Sync Restaurant"
+          onSettingsClick={() => navigate("/settings")}
+          onProfileClick={() => navigate("/profile")}
+        />
+
+        {/*  Main Content */}
+        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
+
           {/* Heading */}
           <div className="mb-6 sm:mb-8 text-white 
             text-center sm:text-left">

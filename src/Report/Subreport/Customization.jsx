@@ -1,214 +1,187 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../../components/Navbar";
-import BackButton from "../../components/BackButton";
-import jsPDF from "jspdf";
-
-export default function CustomizeReport() {
-  const navigate = useNavigate();
-
-  const [type, setType] = useState("daily");
-  const [date, setDate] = useState("");
-  const [month, setMonth] = useState("");
-  const [reportType, setReportType] = useState("sales");
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from "recharts";
+ 
+export default function Customization() {
+ 
   const [payment, setPayment] = useState("all");
   const [orderType, setOrderType] = useState("all");
-  const [viewType, setViewType] = useState("summary");
-  const [sort, setSort] = useState("top");
   const [show, setShow] = useState(false);
-
-  // Dummy Data
+ 
   const data = [
     { name: "Pizza", qty: 50, revenue: 10000, payment: "UPI", type: "dine-in" },
     { name: "Burger", qty: 30, revenue: 6000, payment: "Cash", type: "takeaway" },
     { name: "Pasta", qty: 20, revenue: 4000, payment: "Card", type: "online" },
+    { name: "Sandwich", qty: 25, revenue: 5000, payment: "UPI", type: "dine-in" },
   ];
-
-  // Filter Logic
-  let filtered = data.filter((item) => {
-    return (
-      (payment === "all" || item.payment === payment) &&
-      (orderType === "all" || item.type === orderType)
-    );
-  });
-
-  // Sorting
-  filtered.sort((a, b) =>
-    sort === "top" ? b.qty - a.qty : a.qty - b.qty
+ 
+  const filtered = data.filter((item) =>
+    (payment === "all" || item.payment === payment) &&
+    (orderType === "all" || item.type === orderType)
   );
-
-  // Totals
+ 
   const totalSales = filtered.reduce((acc, i) => acc + i.revenue, 0);
   const totalQty = filtered.reduce((acc, i) => acc + i.qty, 0);
-
-  // PDF
-  const downloadPDF = () => {
-    const doc = new jsPDF();
-
-    doc.text("Custom Report", 20, 20);
-
-    filtered.forEach((item, i) => {
-      doc.text(
-        `${item.name} - ${item.qty} sold - ₹${item.revenue}`,
-        20,
-        40 + i * 10
-      );
-    });
-
-    doc.save("custom-report.pdf");
+ 
+  const topProduct =
+    [...filtered].sort((a, b) => b.qty - a.qty)[0]?.name || "-";
+ 
+  const resetFilters = () => {
+    setPayment("all");
+    setOrderType("all");
+    setShow(false);
   };
-
+ 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
-
-      {/* Navbar (Fixed) */}
-      <Navbar variant="module" moduleName="Reports" />
-
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 max-w-6xl mx-auto">
-
-          <h1 className="text-2xl font-bold mb-6">
-            Customize Report
-          </h1>
-
-          {/* Filters */}
-          <div className="bg-white p-6 rounded shadow mb-6 grid grid-cols-2 gap-4">
-
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="daily">Daily</option>
-              <option value="monthly">Monthly</option>
-            </select>
-
-            {type === "daily" ? (
-              <input
-                type="date"
-                onChange={(e) => setDate(e.target.value)}
-                className="border p-2 rounded"
-              />
-            ) : (
-              <input
-                type="month"
-                onChange={(e) => setMonth(e.target.value)}
-                className="border p-2 rounded"
-              />
-            )}
-
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="sales">Sales</option>
-              <option value="orders">Orders</option>
-              <option value="products">Products</option>
-            </select>
-
-            <select
-              value={payment}
-              onChange={(e) => setPayment(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="all">All Payments</option>
-              <option value="Cash">Cash</option>
-              <option value="UPI">UPI</option>
-              <option value="Card">Card</option>
-            </select>
-
-            <select
-              value={orderType}
-              onChange={(e) => setOrderType(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="all">All Orders</option>
-              <option value="dine-in">Dine-in</option>
-              <option value="takeaway">Takeaway</option>
-              <option value="online">Online</option>
-            </select>
-
-            <select
-              value={viewType}
-              onChange={(e) => setViewType(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="summary">Summary</option>
-              <option value="detailed">Detailed</option>
-            </select>
-
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option value="top">Top Selling</option>
-              <option value="low">Low Selling</option>
-            </select>
-
-          </div>
-
-          {/* Generate Button */}
+    <div className="space-y-6">
+ 
+      {/* Title */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Custom Report
+        </h1>
+        <p className="text-gray-500">
+          Filter and generate your own report
+        </p>
+      </div>
+ 
+      {/* Filters */}
+      <div className="bg-white p-6 rounded-xl shadow-sm space-y-4">
+ 
+        <div className="grid grid-cols-2 gap-4">
+ 
+          <select
+            value={payment}
+            onChange={(e) => setPayment(e.target.value)}
+            className="bg-gray-100 border p-3 rounded-lg focus:ring-2 focus:ring-purple-400"
+          >
+            <option value="all">All Payments</option>
+            <option value="Cash">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="Card">Card</option>
+          </select>
+ 
+          <select
+            value={orderType}
+            onChange={(e) => setOrderType(e.target.value)}
+            className="bg-gray-100 border p-3 rounded-lg focus:ring-2 focus:ring-purple-400"
+          >
+            <option value="all">All Orders</option>
+            <option value="dine-in">Dine-in</option>
+            <option value="takeaway">Takeaway</option>
+            <option value="online">Online</option>
+          </select>
+ 
+        </div>
+ 
+        <div className="flex gap-3">
           <button
             onClick={() => setShow(true)}
-            className="px-6 py-2 bg-blue-500 text-white rounded mb-6"
+            className="px-6 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500"
           >
-            Generate Report
+            Generate
           </button>
-
-          {/* Output */}
-          {show && (
-            <div className="bg-white p-6 rounded shadow">
-
-              {viewType === "summary" && (
-                <div className="mb-4">
-                  <p>Total Sales: ₹{totalSales}</p>
-                  <p>Total Items Sold: {totalQty}</p>
-                </div>
-              )}
-
-              <table className="w-full mb-4">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="p-2">Item</th>
-                    <th className="p-2">Qty</th>
-                    <th className="p-2">Revenue</th>
-                    <th className="p-2">Payment</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filtered.map((item, i) => (
-                    <tr key={i} className="border-b">
-                      <td className="p-2">{item.name}</td>
-                      <td className="p-2">{item.qty}</td>
-                      <td className="p-2">₹{item.revenue}</td>
-                      <td className="p-2">{item.payment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <button
-                onClick={downloadPDF}
-                className="px-4 py-2 bg-green-500 text-white rounded"
-              >
-                📄 Download PDF
-              </button>
-
+ 
+          <button
+            onClick={resetFilters}
+            className="px-6 py-2 bg-gray-400 hover:bg-gray-500 rounded-lg"
+          >
+            Reset
+          </button>
+        </div>
+ 
+      </div>
+ 
+      {/* RESULT */}
+      {show && (
+        <>
+          {/* Empty State */}
+          {filtered.length === 0 && (
+            <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
+              No data found for selected filters ❌
             </div>
           )}
-
-        </div>
-      </div>
-
-      {/* Fixed Back Button */}
-      <div className="fixed bottom-0 left-0 p-3 sm:p-4">
-        <BackButton to="/reports" />
-      </div>
-
+ 
+          {filtered.length > 0 && (
+            <>
+              {/* Cards */}
+              <div className="grid grid-cols-3 gap-4">
+ 
+                <div className="bg-gray-200  p-5 rounded-xl shadow-sm">
+                  <p>Total Sales</p>
+                  <h2 className="font-bold">₹{totalSales}</h2>
+                </div>
+ 
+                <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
+                  <p>Items Sold</p>
+                  <h2 className="font-bold">{totalQty}</h2>
+                </div>
+ 
+                <div className="bg-linear-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
+                  <p>Top Product</p>
+                  <h2 className="font-bold">{topProduct}</h2>
+                </div>
+ 
+              </div>
+ 
+              {/* 🔥 Real Chart */}
+              <div className="bg-gray-200  p-6 rounded-xl shadow-sm">
+                <p className="mb-3 font-semibold">Sales Chart</p>
+ 
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={filtered}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip cursor={false} />
+                    <Bar dataKey="revenue" fill="#7c3aed" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+ 
+              {/* Table */}
+              <div className="bg-gray-200  p-6 rounded-xl shadow-sm">
+ 
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-3 text-left">Item</th>
+                      <th className="p-3 text-left">Qty</th>
+                      <th className="p-3 text-left">Revenue</th>
+                      <th className="p-3 text-left">Payment</th>
+                      <th className="p-3 text-left">Type</th>
+                    </tr>
+                  </thead>
+ 
+                  <tbody>
+                    {filtered.map((item, i) => (
+                      <tr
+                        key={i}
+                        className={`border-t ${
+                          item.name === topProduct
+                            ? "bg-green-50 font-semibold"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <td className="p-3">{item.name}</td>
+                        <td className="p-3">{item.qty}</td>
+                        <td className="p-3 text-green-600">
+                          ₹{item.revenue}
+                        </td>
+                        <td className="p-3">{item.payment}</td>
+                        <td className="p-3 capitalize">{item.type}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+ 
+                </table>
+ 
+              </div>
+            </>
+          )}
+        </>
+      )}
+ 
     </div>
   );
 }
