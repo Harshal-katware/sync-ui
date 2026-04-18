@@ -2,27 +2,27 @@ import { useState, useMemo } from "react";
 import BackButton from "../components/BackButton";
 
 const MENU_ITEMS = [
-  { id: 1, name: "Butter Milk", price: 30, cat: "drink", emoji: "🥛" },
-  { id: 2, name: "Butter Kulcha", price: 50, cat: "veg", emoji: "🫓" },
-  { id: 3, name: "Kaju Paneer Masala", price: 220, cat: "veg", emoji: "🧆" },
-  { id: 4, name: "Dal Makhani", price: 180, cat: "veg", emoji: "🍲" },
-  { id: 5, name: "Chicken Tikka", price: 280, cat: "nonveg", emoji: "🍗" },
-  { id: 6, name: "Mutton Curry", price: 320, cat: "nonveg", emoji: "🍛" },
-  { id: 7, name: "Roti", price: 15, cat: "veg", emoji: "🫓" },
-  { id: 8, name: "Naan", price: 25, cat: "veg", emoji: "🫓" },
-  { id: 9, name: "Lassi", price: 60, cat: "drink", emoji: "🥤" },
-  { id: 10, name: "Cold Drink", price: 40, cat: "drink", emoji: "🧃" },
-  { id: 11, name: "Paneer Tikka", price: 200, cat: "veg", emoji: "🧀" },
-  { id: 12, name: "Veg Biryani", price: 160, cat: "veg", emoji: "🍚" },
-  { id: 13, name: "Chicken Biryani", price: 240, cat: "nonveg", emoji: "🍚" },
-  { id: 14, name: "Raita", price: 40, cat: "veg", emoji: "🥣" },
-  { id: 15, name: "Gulab Jamun", price: 50, cat: "veg", emoji: "🍮" },
+  { id: 1,  name: "Butter Milk",        price: 30,  cat: "drink",  emoji: "🥛" },
+  { id: 2,  name: "Butter Kulcha",      price: 50,  cat: "veg",    emoji: "🫓" },
+  { id: 3,  name: "Kaju Paneer Masala", price: 220, cat: "veg",    emoji: "🧆" },
+  { id: 4,  name: "Dal Makhani",        price: 180, cat: "veg",    emoji: "🍲" },
+  { id: 5,  name: "Chicken Tikka",      price: 280, cat: "nonveg", emoji: "🍗" },
+  { id: 6,  name: "Mutton Curry",       price: 320, cat: "nonveg", emoji: "🍛" },
+  { id: 7,  name: "Roti",               price: 15,  cat: "veg",    emoji: "🫓" },
+  { id: 8,  name: "Naan",               price: 25,  cat: "veg",    emoji: "🫓" },
+  { id: 9,  name: "Lassi",              price: 60,  cat: "drink",  emoji: "🥤" },
+  { id: 10, name: "Cold Drink",         price: 40,  cat: "drink",  emoji: "🧃" },
+  { id: 11, name: "Paneer Tikka",       price: 200, cat: "veg",    emoji: "🧀" },
+  { id: 12, name: "Veg Biryani",        price: 160, cat: "veg",    emoji: "🍚" },
+  { id: 13, name: "Chicken Biryani",    price: 240, cat: "nonveg", emoji: "🍚" },
+  { id: 14, name: "Raita",              price: 40,  cat: "veg",    emoji: "🥣" },
+  { id: 15, name: "Gulab Jamun",        price: 50,  cat: "veg",    emoji: "🍮" },
 ];
 
 const INITIAL_TABLES = [
-  ...Array.from({ length: 11 }, (_, i) => ({ id: i + 1, name: `Table ${i + 1}`, zone: "HALL" })),
-  ...Array.from({ length: 5 }, (_, i) => ({ id: i + 12, name: `Table ${i + 12}`, zone: "FAMILY" })),
-  ...Array.from({ length: 4 }, (_, i) => ({ id: i + 31, name: `Bill ${i + 31}`, zone: "PARCEL" })),
+  ...Array.from({ length: 11 }, (_, i) => ({ id: i + 1,  name: `Table ${i + 1}`,  zone: "HALL"   })),
+  ...Array.from({ length: 5  }, (_, i) => ({ id: i + 12, name: `Table ${i + 12}`, zone: "FAMILY" })),
+  ...Array.from({ length: 4  }, (_, i) => ({ id: i + 31, name: `Bill ${i + 31}`,  zone: "PARCEL" })),
 ];
 
 function Toast({ msg }) {
@@ -48,18 +48,20 @@ function Modal({ title, onClose, children }) {
 }
 
 export default function RestaurantPOS() {
-  const [tables, setTables] = useState(INITIAL_TABLES);
-  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
-  const [orders, setOrders] = useState({});
+  const [tables, setTables]         = useState(INITIAL_TABLES);
+  const [menuItems, setMenuItems]   = useState(MENU_ITEMS);
+  const [orders, setOrders]         = useState({});
   const [selectedTable, setSelectedTable] = useState(null);
-  const [zone, setZone] = useState("all");
+  const [zone, setZone]             = useState("all");
   const [menuSearch, setMenuSearch] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [lastBill, setLastBill] = useState(0);
-  const [modal, setModal] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [discount, setDiscount]     = useState(0);
+  const [lastBill, setLastBill]     = useState(0);
+  const [modal, setModal]           = useState(null);
+  const [toast, setToast]           = useState(null);
   const [nextTableId, setNextTableId] = useState(100);
-  const [form, setForm] = useState({});
+  const [form, setForm]             = useState({});
+  // For mobile: show left or right panel
+  const [mobileView, setMobileView] = useState("left"); // "left" | "right"
 
   const notify = (msg) => {
     setToast(msg);
@@ -73,7 +75,7 @@ export default function RestaurantPOS() {
   };
 
   const addToOrder = (menuId) => {
-    if (!selectedTable) { notify("⚠️ Pehle table select karein!"); return; }
+    if (!selectedTable) { notify("⚠️ Please select a table first!"); return; }
     const m = menuItems.find((x) => x.id === menuId);
     if (!m) return;
     const ord = [...currentOrder];
@@ -83,18 +85,21 @@ export default function RestaurantPOS() {
     setMenuSearch("");
   };
 
-  const changeQty = (menuId, d) => {
-    const ord = currentOrder.map((x) => x.menuId === menuId ? { ...x, qty: Math.max(1, x.qty + d) } : x);
+  // Manual qty change — accepts direct number input
+  const setQty = (menuId, val) => {
+    const parsed = parseInt(val, 10);
+    if (isNaN(parsed) || parsed < 1) return;
+    const ord = currentOrder.map((x) => x.menuId === menuId ? { ...x, qty: parsed } : x);
     setCurrentOrder(ord);
   };
 
   const removeItem = (menuId) => setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
 
-  const subtotal = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
-  const discAmt = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
+  const subtotal  = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
+  const discAmt   = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
   const afterDisc = subtotal - discAmt;
-  const gst = afterDisc * 0.05;
-  const total = afterDisc + gst;
+  const gst       = afterDisc * 0.05;
+  const total     = afterDisc + gst;
   const totalItems = currentOrder.reduce((s, i) => s + i.qty, 0);
 
   const filteredMenu = useMemo(() =>
@@ -105,85 +110,103 @@ export default function RestaurantPOS() {
   const filteredTables = tables.filter((t) => zone === "all" || t.zone === zone);
 
   const settleBill = () => {
-    if (!selectedTable) { notify("⚠️ Table select karein!"); return; }
-    if (!currentOrder.length) { notify("⚠️ Order empty hai!"); return; }
+    if (!selectedTable)        { notify("⚠️ Please select a table!"); return; }
+    if (!currentOrder.length)  { notify("⚠️ Order is empty!"); return; }
     setLastBill(Math.round(total));
     setOrders((prev) => ({ ...prev, [selectedTable]: [] }));
     setDiscount(0);
-    notify(`✅ ₹${total.toFixed(0)} Settle ho gaya!`);
+    notify(`✅ ₹${total.toFixed(0)} Settled successfully!`);
   };
 
-  const printKOT = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; } notify("🖨️ KOT Print hua!"); };
-  const saveKOT = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; } notify("💾 KOT Save hua!"); };
-  const saveBill = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; } notify("💾 Bill Save hua!"); };
-  const printBill = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order empty hai!"); return; } notify("🖨️ Bill Print hua!"); };
+  const printKOT  = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; } notify("🖨️ KOT Printed!"); };
+  const saveKOT   = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; } notify("💾 KOT Saved!"); };
+  const saveBill  = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; } notify("💾 Bill Saved!"); };
+  const printBill = () => { if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; } notify("🖨️ Bill Printed!"); };
 
   const openAddTable = () => { setForm({ name: "", zone: "HALL" }); setModal("addTable"); };
-  const openAddMenu = () => { setForm({ name: "", price: "", cat: "veg", emoji: "🍽️" }); setModal("addMenu"); };
+  const openAddMenu  = () => { setForm({ name: "", price: "", cat: "veg", emoji: "🍽️" }); setModal("addMenu"); };
   const openEditMenu = (item) => { setForm({ ...item }); setModal("editMenu"); };
 
   const handleAddTable = () => {
-    if (!form.name.trim()) { notify("⚠️ Table naam daalein!"); return; }
+    if (!form.name.trim()) { notify("⚠️ Please enter table name!"); return; }
     const id = nextTableId; setNextTableId((n) => n + 1);
     setTables((prev) => [...prev, { id, name: form.name.trim(), zone: form.zone }]);
-    setModal(null); notify("✅ Table add hua!");
+    setModal(null); notify("✅ Table added!");
   };
 
   const handleDeleteTable = (id) => {
     setTables((prev) => prev.filter((t) => t.id !== id));
     if (selectedTable === id) setSelectedTable(null);
     setOrders((prev) => { const n = { ...prev }; delete n[id]; return n; });
-    setModal(null); notify("🗑️ Table delete hua!");
+    setModal(null); notify("🗑️ Table deleted!");
   };
 
   const handleAddMenu = () => {
-    if (!form.name.trim() || !form.price) { notify("⚠️ Naam aur price daalein!"); return; }
+    if (!form.name.trim() || !form.price) { notify("⚠️ Please enter name and price!"); return; }
     setMenuItems((prev) => [...prev, { id: Date.now(), name: form.name.trim(), price: parseFloat(form.price), cat: form.cat, emoji: form.emoji || "🍽️" }]);
-    setModal(null); notify("✅ Menu item add hua!");
+    setModal(null); notify("✅ Menu item added!");
   };
 
   const handleSaveMenu = () => {
     setMenuItems((prev) => prev.map((m) => m.id === form.id ? { ...form, price: parseFloat(form.price) } : m));
-    setModal(null); notify("✅ Menu update hua!");
+    setModal(null); notify("✅ Menu updated!");
   };
 
   const handleDeleteMenu = () => {
     setMenuItems((prev) => prev.filter((m) => m.id !== form.id));
-    setModal(null); notify("🗑️ Menu item delete hua!");
+    setModal(null); notify("🗑️ Menu item deleted!");
   };
 
   const selectedTableObj = tables.find((t) => t.id === selectedTable);
 
   const ZONE_BTNS = [
-    { val: "all", label: "All", cls: "bg-orange-600 text-white" },
-    { val: "HALL", label: "HALL", cls: "bg-green-800 text-white" },
-    { val: "FAMILY", label: "FAMILY", cls: "bg-yellow-700 text-white" },
-    { val: "PARCEL", label: "PARCEL ORDER", cls: "bg-blue-800 text-white" },
+    { val: "all",    label: "All",          cls: "bg-orange-600 text-white" },
+    { val: "HALL",   label: "HALL",         cls: "bg-green-800 text-white"  },
+    { val: "FAMILY", label: "FAMILY",       cls: "bg-yellow-700 text-white" },
+    { val: "PARCEL", label: "PARCEL ORDER", cls: "bg-blue-800 text-white"   },
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ fontFamily: "Arial, sans-serif", background: "#f0f0e8", fontSize: "13px" }}>
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ fontFamily: "Arial, sans-serif", background: "#f0f0e8", fontSize: "13px" }}>
+
+      {/* ── MOBILE TAB SWITCHER ── */}
+      <div className="flex md:hidden border-b-2 border-gray-400" style={{ background: "#1a1a1a" }}>
+        <button
+          onClick={() => setMobileView("left")}
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${mobileView === "left" ? "bg-green-700 text-white" : "text-gray-400"}`}
+        >
+          🧾 Order
+        </button>
+        <button
+          onClick={() => setMobileView("right")}
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${mobileView === "right" ? "bg-green-700 text-white" : "text-gray-400"}`}
+        >
+          🪑 Tables
+        </button>
+      </div>
 
       {/* ── LEFT PANEL ── */}
-      <div className="flex flex-col border-r-2 border-gray-400" style={{ width: "50%", background: "#f0f0e8" }}>
-
+      <div
+        className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`}
+        style={{ width: "100%", maxWidth: "100%", flex: "1 1 0", background: "#f0f0e8" }}
+      >
         {/* Top Bar */}
-        <div className="flex items-center gap-1.5 px-2 py-1.5" style={{ background: "#1a1a1a" }}>
+        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
           <button className="text-white px-2 py-1.5 rounded text-base" style={{ background: "#444" }}>☰</button>
           <input
             value={selectedTableObj ? selectedTableObj.name : ""}
             readOnly
             placeholder="Table"
             className="rounded px-2 py-1 text-sm outline-none text-gray-800"
-            style={{ width: "130px", height: "32px", background: "#fff" }}
+            style={{ width: "110px", height: "32px", background: "#fff" }}
           />
           <input
             placeholder="Captain"
             className="rounded px-2 py-1 text-sm outline-none text-gray-800"
-            style={{ width: "130px", height: "32px", background: "#fff" }}
+            style={{ width: "110px", height: "32px", background: "#fff" }}
           />
           <div className="flex-1" />
-          <button onClick={openAddMenu} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#444" }}>+ Menu</button>
+          <button onClick={openAddMenu}  className="text-white text-xs px-2 py-1 rounded" style={{ background: "#444" }}>+ Menu</button>
           <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
 
@@ -201,8 +224,8 @@ export default function RestaurantPOS() {
         </div>
 
         {/* Column Headers */}
-        <div className="grid gap-1 px-2 pb-1" style={{ gridTemplateColumns: "1fr 100px 80px" }}>
-          {["Item Name", "Qty  ·  Price", "Total"].map((h) => (
+        <div className="grid gap-1 px-2 pb-1" style={{ gridTemplateColumns: "1fr 80px 70px" }}>
+          {["Item Name", "Qty · Price", "Total"].map((h) => (
             <div key={h} className="border border-gray-400 rounded text-center py-1 text-xs text-gray-600" style={{ background: "#fff" }}>{h}</div>
           ))}
         </div>
@@ -211,14 +234,14 @@ export default function RestaurantPOS() {
         <div className="flex-1 overflow-y-auto px-2 pb-1 space-y-0.5">
           {menuSearch ? (
             filteredMenu.length === 0 ? (
-              <div className="text-center py-6 text-gray-400 text-xs">Koi item nahi mila</div>
+              <div className="text-center py-6 text-gray-400 text-xs">No items found</div>
             ) : (
               filteredMenu.map((m) => (
                 <div
                   key={m.id}
                   onClick={() => addToOrder(m.id)}
                   className="grid gap-1 cursor-pointer hover:bg-yellow-50 rounded border border-gray-200"
-                  style={{ gridTemplateColumns: "1fr 100px 80px" }}
+                  style={{ gridTemplateColumns: "1fr 80px 70px" }}
                 >
                   <div className="px-2 py-1.5 text-xs flex items-center gap-1 bg-white rounded-l">
                     <span>{m.emoji}</span><span className="font-medium">{m.name}</span>
@@ -229,20 +252,28 @@ export default function RestaurantPOS() {
               ))
             )
           ) : currentOrder.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-xs">Koi order nahi · item search karein</div>
+            <div className="text-center py-10 text-gray-400 text-xs">No order · Search and add items</div>
           ) : (
             currentOrder.map((item) => (
-              <div key={item.menuId} className="grid gap-1" style={{ gridTemplateColumns: "1fr 100px 80px" }}>
+              <div key={item.menuId} className="grid gap-1" style={{ gridTemplateColumns: "1fr 80px 70px" }}>
+                {/* Item Name */}
                 <div className="px-2 py-1.5 text-xs flex items-center gap-1 border border-gray-300 rounded-l" style={{ background: "#fff" }}>
                   <button onClick={() => removeItem(item.menuId)} className="text-red-600 font-bold text-sm leading-none">×</button>
                   <span>{item.emoji}</span>
                   <span className="truncate">{item.name}</span>
                 </div>
-                <div className="flex items-center justify-center gap-1 border border-gray-300 text-xs" style={{ background: "#fff" }}>
-                  <button onClick={() => changeQty(item.menuId, -1)} className="w-5 h-5 rounded text-white text-xs flex items-center justify-center" style={{ background: "#555" }}>−</button>
-                  <span className="font-bold w-5 text-center">{item.qty}</span>
-                  <button onClick={() => changeQty(item.menuId, 1)} className="w-5 h-5 rounded text-white text-xs flex items-center justify-center" style={{ background: "#555" }}>+</button>
+                {/* Manual Qty Input */}
+                <div className="flex items-center justify-center border border-gray-300 text-xs" style={{ background: "#fff" }}>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.qty}
+                    onChange={(e) => setQty(item.menuId, e.target.value)}
+                    className="w-full text-center text-xs font-bold outline-none border-none bg-transparent"
+                    style={{ height: "100%", padding: "2px" }}
+                  />
                 </div>
+                {/* Total */}
                 <div className="flex items-center justify-center border border-gray-300 rounded-r text-xs font-bold text-green-800" style={{ background: "#fff" }}>
                   ₹{item.price * item.qty}
                 </div>
@@ -288,19 +319,21 @@ export default function RestaurantPOS() {
       </div>
 
       {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: "#f0f0e8" }}>
-
-        {/* Action Buttons */}
+      <div
+        className={`flex flex-col overflow-hidden ${mobileView === "right" ? "flex" : "hidden"} md:flex`}
+        style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}
+      >
+        {/* Action Buttons — all green now */}
         <div className="grid gap-1.5 p-2" style={{ background: "#1a1a1a", gridTemplateColumns: "1fr 1fr 1fr" }}>
-          <button onClick={printKOT} className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#2a2a2a" }}>🖨️ Print KOT</button>
-          <button onClick={saveBill} className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#2a2a2a" }}>💾 Save Bill</button>
+          <button onClick={printKOT}  className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#1a7a4a" }}>🖨️ Print KOT</button>
+          <button onClick={saveBill}  className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#1a7a4a" }}>💾 Save Bill</button>
           <button onClick={printBill} className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#6633aa" }}>🖨️ Print Bill</button>
-          <button onClick={saveKOT} className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#2a2a2a" }}>💾 Save KOT</button>
+          <button onClick={saveKOT}   className="text-white text-sm font-bold py-2.5 rounded" style={{ background: "#1a7a4a" }}>💾 Save KOT</button>
           <button onClick={settleBill} className="text-white text-sm font-bold py-2.5 rounded col-span-2" style={{ background: "#1a7a4a" }}>✅ Settle Bill</button>
         </div>
 
         {/* Zone Filter */}
-        <div className="flex gap-2 px-3 py-2 border-b-2 border-gray-400" style={{ background: "#f0f0e8" }}>
+        <div className="flex gap-2 px-3 py-2 border-b-2 border-gray-400 flex-wrap" style={{ background: "#f0f0e8" }}>
           {ZONE_BTNS.map(({ val, label, cls }) => (
             <button
               key={val}
@@ -314,16 +347,16 @@ export default function RestaurantPOS() {
 
         {/* Tables Grid */}
         <div className="flex-1 overflow-y-auto p-3">
-          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))" }}>
             {filteredTables.map((t) => {
-              const ord = orders[t.id] || [];
+              const ord   = orders[t.id] || [];
               const tTotal = ord.reduce((s, i) => s + i.price * i.qty, 0);
-              const isOcc = ord.length > 0;
-              const isSel = selectedTable === t.id;
+              const isOcc  = ord.length > 0;
+              const isSel  = selectedTable === t.id;
               return (
                 <div
                   key={t.id}
-                  onClick={() => setSelectedTable(t.id)}
+                  onClick={() => { setSelectedTable(t.id); setMobileView("left"); }}
                   className="rounded-md text-center cursor-pointer select-none transition-transform hover:scale-105"
                   style={{
                     border: isSel ? "3px solid #ffaa00" : "2px solid #bbb",
@@ -343,7 +376,7 @@ export default function RestaurantPOS() {
           {filteredTables.length === 0 && (
             <div className="flex flex-col items-center justify-center h-40 text-gray-400">
               <span className="text-2xl mb-2">🪑</span>
-              <p className="text-xs">Is zone mein koi table nahi</p>
+              <p className="text-xs">No tables in this zone</p>
             </div>
           )}
           <div className="mt-6">
@@ -354,8 +387,8 @@ export default function RestaurantPOS() {
 
       {/* ── MODALS ── */}
       {modal === "addTable" && (
-        <Modal title="Naya Table Add Karein" onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Table naam" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Modal title="Add New Table" onClose={() => setModal(null)}>
+          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Table name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <select className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white" value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })}>
             <option value="HALL">Hall</option>
             <option value="FAMILY">Family</option>
@@ -369,8 +402,8 @@ export default function RestaurantPOS() {
       )}
 
       {modal === "addMenu" && (
-        <Modal title="Naya Menu Item" onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Item naam" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <Modal title="Add New Menu Item" onClose={() => setModal(null)}>
+          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Item name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" type="number" placeholder="Price (₹)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
           <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Emoji" value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} />
           <select className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white" value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })}>
@@ -386,7 +419,7 @@ export default function RestaurantPOS() {
       )}
 
       {modal === "editMenu" && (
-        <Modal title="Menu Item Edit" onClose={() => setModal(null)}>
+        <Modal title="Edit Menu Item" onClose={() => setModal(null)}>
           <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
           <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} />
