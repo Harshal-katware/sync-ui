@@ -1,40 +1,54 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
-import bg from "../assets/restro4.jpg";
-import logo from "../assets/chef2.jpg";
+import bg from "src/assets/restro4.jpg";
+import logo from "../assets/logo.png";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function AuthPage() {
+interface FormState {
+  name: string;
+  email: string;
+  password: string;
+  confirm: string;
+}
+
+interface FormErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirm?: string;
+}
+
+export default function AuthPage(): JSX.Element {
   const navigate = useNavigate();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
-  const [remember, setRemember] = useState(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [isLogin, setIsLogin] = useState<boolean>(true);
+  const [remember, setRemember] = useState<boolean>(false);
 
-  const initialState = {
+  const initialState: FormState = {
     name: "",
     email: "",
     password: "",
     confirm: "",
   };
 
-  const [form, setForm] = useState(initialState);
-  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState<FormState>(initialState);
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  // 🔥 Handle input
-  const handleChange = (e) => {
+  // Handle input
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
 
     setForm({ ...form, [name]: value });
 
-    // remove error while typing
+    // Remove error while typing
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // 🔥 Validation
-  const validate = () => {
-    let err = {};
+  // Validation
+  const validate = (): FormErrors => {
+    const err: FormErrors = {};
 
     const name = form.name.trim();
     const email = form.email.trim();
@@ -60,41 +74,33 @@ export default function AuthPage() {
 
     if (!isLogin) {
       if (!confirm) err.confirm = "Confirm password required";
-      else if (confirm !== password)
-        err.confirm = "Passwords do not match";
+      else if (confirm !== password) err.confirm = "Passwords do not match";
     }
 
     return err;
   };
 
-  // 🔥 Submit
-  const handleSubmit = () => {
-    const validationErrors = validate();
+  // Submit
+  const handleSubmit = (): void => {
+    const validationErrors: FormErrors = validate();
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-
       if (isLogin) {
-        //  Demo login check
-        if (
-          form.email === "admin@gmail.com" &&
-          form.password === "Admin123"
-        ) {
+        // Demo login check
+        if (form.email === "admin@gmail.com" && form.password === "Admin123") {
           alert("Login Success ✅");
-
-          // 🔥 Redirect
           navigate("/dashboard");
         } else {
           setErrors({ email: "Invalid email or password" });
           return;
         }
-
       } else {
         alert("Signup Success ✅");
         setIsLogin(true);
       }
 
-      // 🔥 Reset form
+      // Reset form
       setForm(initialState);
       setErrors({});
       setRemember(false);
@@ -140,7 +146,9 @@ export default function AuthPage() {
                 onChange={handleChange}
                 className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
               />
-              {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-red-400 text-sm">{errors.name}</p>
+              )}
             </div>
           )}
 
@@ -154,7 +162,9 @@ export default function AuthPage() {
               onChange={handleChange}
               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
             />
-            {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-400 text-sm">{errors.email}</p>
+            )}
           </div>
 
           {/* Password */}
@@ -167,14 +177,12 @@ export default function AuthPage() {
               onChange={handleChange}
               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
             />
-
             <span
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-9 cursor-pointer"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </span>
-
             {errors.password && (
               <p className="text-red-400 text-sm">{errors.password}</p>
             )}
@@ -184,7 +192,6 @@ export default function AuthPage() {
           {!isLogin && (
             <div className="relative">
               <label className="text-sm">Confirm Password</label>
-
               <input
                 type={showConfirm ? "text" : "password"}
                 name="confirm"
@@ -192,14 +199,12 @@ export default function AuthPage() {
                 onChange={handleChange}
                 className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
               />
-
               <span
                 onClick={() => setShowConfirm(!showConfirm)}
                 className="absolute right-3 top-9 cursor-pointer"
               >
                 {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
               </span>
-
               {errors.confirm && (
                 <p className="text-red-400 text-sm">{errors.confirm}</p>
               )}
@@ -218,7 +223,6 @@ export default function AuthPage() {
               />
               Remember Me
             </label>
-
             <span
               onClick={() => alert("Reset password coming soon")}
               className="underline cursor-pointer"
@@ -250,7 +254,6 @@ export default function AuthPage() {
             {isLogin ? "Sign Up" : "Login"}
           </span>
         </p>
-
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Settings, CalendarDays } from "lucide-react";
-import BackButton from "../components/BackButton";
+import BackButton from "../components/BackButton.js";
 
 export default function Reports() {
   const location = useLocation();
@@ -13,11 +13,11 @@ export default function Reports() {
   ];
 
   return (
-    <div className="h-screen flex bg-linear-to-br from-[#c9cdca] to-[#b3e4bb] p-5">
+    <div className="h-screen flex bg-white/40 p-5">
 
       {/* Sidebar */}
-      <aside className="w-64 bg-emerald-700 backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col">
-        <h1 className="text-2xl font-bold mb-10 tracking-wide font-serif">
+      <aside className="w-64 bg-[#059669] backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col">
+        <h1 className="text-2xl font-serif mb-10 tracking-wide">
           Reports
         </h1>
 
@@ -40,13 +40,13 @@ export default function Reports() {
         </nav>
 
         {/* Bottom */}
-        <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+        <div className=" fixed bottom-0 left-0 p-3 sm:p-4 ">
                 <BackButton to="/dashboard" />
               </div>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 bg-white/80 backdrop-blur-xl rounded-2xl ml-5 flex flex-col overflow-hidden">
+      <main className="flex-1 bg-white backdrop-blur-xl rounded-2xl ml-5 flex flex-col overflow-hidden">
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
