@@ -1,6 +1,12 @@
+
 import { useNavigate } from "react-router-dom";
 
-export default function BackButton({ to }) {
+// ─── Props Type ─────────────────────────────────────────
+type BackButtonProps = {
+  to?: string;
+};
+
+export default function BackButton({ to }: BackButtonProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {

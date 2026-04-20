@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import RestaurantPOS from "./BILLING/Restaurantpos";
 import Reports from "./Report/Reports";
 import DailyUpdate from "./Report/Subreport/DailyUpdate";
-import Menupage from "./MENU/Menupage";
+import Menupage from "./MENU/Menupage"
 import InventoryManagement from "./Inventory/Inventorymanagement";
 import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
