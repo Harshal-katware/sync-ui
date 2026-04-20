@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";        
 import type { JSX } from "react";
-import restroImage from "src/assets/restro4.jpg";  
+import restroImage from "../assets/restro4.jpg";
 
 interface NavCard {
   title: string;

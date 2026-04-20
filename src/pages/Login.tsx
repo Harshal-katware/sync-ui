@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
-import bg from "src/assets/restro4.jpg";
-import logo from "../assets/logo.png";
+import bg from "../assets/restro4.jpg";
+import logo from "../assets/chef2.jpg";
 import { Eye, EyeOff } from "lucide-react";
 
 interface FormState {
