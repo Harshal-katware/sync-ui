@@ -147,7 +147,7 @@ export default function TopSellingProducts(): JSX.Element {
           {/* Table */}
           <div className="bg-gray-200 rounded-xl shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-300">
                 <tr>
                   <th className="p-3 text-left">Product</th>
                   <th className="p-3 text-left">Qty</th>
@@ -160,8 +160,8 @@ export default function TopSellingProducts(): JSX.Element {
                     key={i}
                     className={`border-t ${
                       p.name === topProduct
-                        ? "bg-green-50 font-semibold"
-                        : "hover:bg-gray-50"
+                        ? "bg-gray-200 font-semibold"
+                        : "hover:bg-gray-200"
                     }`}
                   >
                     <td className="p-3">{p.name}</td>

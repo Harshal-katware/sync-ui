@@ -127,7 +127,7 @@ export default function DailyUpdate() {
         </div>
 
         <table className="w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-300">
             <tr>
               <th className="p-3 text-left">Product</th>
               <th className="p-3 text-left">Qty</th>
