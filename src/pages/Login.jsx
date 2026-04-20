@@ -1,46 +1,66 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import bg from "../assets/restro4.jpg";
 import logo from "../assets/chef2.jpg";
 import { Eye, EyeOff } from "lucide-react";
+
 export default function AuthPage() {
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [remember, setRemember] = useState(false);
 
-  const [form, setForm] = useState({
+  const initialState = {
     name: "",
     email: "",
     password: "",
     confirm: "",
-  });
+  };
 
+  const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
 
   // 🔥 Handle input
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    setForm({ ...form, [name]: value });
+
+    // remove error while typing
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   // 🔥 Validation
   const validate = () => {
     let err = {};
 
-    if (!isLogin && !form.name) {
-      err.name = "Name is required";
-    }
-
-    if (!form.email) err.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      err.email = "Invalid email";
-
-    if (!form.password) err.password = "Password is required";
-    else if (form.password.length < 6)
-      err.password = "Min 6 characters";
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const password = form.password.trim();
+    const confirm = form.confirm.trim();
 
     if (!isLogin) {
-      if (!form.confirm) err.confirm = "Confirm password required";
-      else if (form.confirm !== form.password)
+      if (!name) err.name = "Name is required";
+      else if (name.length < 3) err.name = "Minimum 3 characters required";
+    }
+
+    if (!email) err.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      err.email = "Enter valid email";
+
+    if (!password) err.password = "Password is required";
+    else if (password.length < 6)
+      err.password = "Minimum 6 characters required";
+    else if (!/[A-Z]/.test(password))
+      err.password = "At least 1 uppercase required";
+    else if (!/[0-9]/.test(password))
+      err.password = "At least 1 number required";
+
+    if (!isLogin) {
+      if (!confirm) err.confirm = "Confirm password required";
+      else if (confirm !== password)
         err.confirm = "Passwords do not match";
     }
 
@@ -53,7 +73,33 @@ export default function AuthPage() {
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-      alert(isLogin ? "Login Success ✅" : "Signup Success ✅");
+
+      if (isLogin) {
+        //  Demo login check
+        if (
+          form.email === "admin@gmail.com" &&
+          form.password === "Admin123"
+        ) {
+          alert("Login Success ✅");
+
+          // 🔥 Redirect
+          navigate("/dashboard");
+        } else {
+          setErrors({ email: "Invalid email or password" });
+          return;
+        }
+
+      } else {
+        alert("Signup Success ✅");
+        setIsLogin(true);
+      }
+
+      // 🔥 Reset form
+      setForm(initialState);
+      setErrors({});
+      setRemember(false);
+      setShowPassword(false);
+      setShowConfirm(false);
     }
   };
 
@@ -65,7 +111,7 @@ export default function AuthPage() {
       <div className="absolute inset-0 bg-black/60"></div>
 
       <div className="relative z-10 w-full max-w-md p-8 text-white text-center">
-        
+
         {/* Logo */}
         <div className="mb-4">
           <div className="w-20 h-20 mx-auto rounded-full bg-white/20 flex items-center justify-center">
@@ -77,21 +123,20 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Title */}
         <h1 className="text-2xl mb-6">
           {isLogin ? "Login to Continue" : "Create Account"}
         </h1>
 
-        {/* Inputs */}
         <div className="space-y-4 text-left">
 
+          {/* Name */}
           {!isLogin && (
             <div>
               <label className="text-sm">Full Name</label>
               <input
                 type="text"
                 name="name"
-                placeholder="Enter name"
+                value={form.name}
                 onChange={handleChange}
                 className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
               />
@@ -99,65 +144,68 @@ export default function AuthPage() {
             </div>
           )}
 
+          {/* Email */}
           <div>
             <label className="text-sm">Email Address</label>
             <input
               type="email"
               name="email"
-              placeholder="abc@xyz.com"
+              value={form.email}
               onChange={handleChange}
               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded"
             />
             {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
           </div>
 
-         <div className="relative">
-           <label className="text-sm">Password</label>
-
-           <input
+          {/* Password */}
+          <div className="relative">
+            <label className="text-sm">Password</label>
+            <input
               type={showPassword ? "text" : "password"}
               name="password"
-              placeholder="********"
+              value={form.password}
               onChange={handleChange}
               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
-           />
+            />
 
-           <span
-             onClick={() => setShowPassword(!showPassword)}
-             className="absolute right-3 top-9 cursor-pointer text-gray-300 hover:text-white"
-           >
-             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-           </span>
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-9 cursor-pointer"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </span>
 
-           {errors.password && (
-            <p className="text-red-400 text-sm">{errors.password}</p>
+            {errors.password && (
+              <p className="text-red-400 text-sm">{errors.password}</p>
             )}
-         </div>
+          </div>
 
-        {!isLogin && (
-          <div className="relative">
-            <label className="text-sm">Confirm Password</label>
+          {/* Confirm Password */}
+          {!isLogin && (
+            <div className="relative">
+              <label className="text-sm">Confirm Password</label>
 
-           <input
-               type={showConfirm ? "text" : "password"}
-               name="confirm"
-               placeholder="Confirm password"
-               onChange={handleChange}
-               className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
-           />
+              <input
+                type={showConfirm ? "text" : "password"}
+                name="confirm"
+                value={form.confirm}
+                onChange={handleChange}
+                className="w-full mt-1 px-4 py-2 bg-transparent border border-gray-400 rounded pr-10"
+              />
 
-           <span
-               onClick={() => setShowConfirm(!showConfirm)}
-               className="absolute right-3 top-9 cursor-pointer text-gray-300 hover:text-white">
-               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
-           </span>
+              <span
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-9 cursor-pointer"
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
 
-            {errors.confirm && (
-             <p className="text-red-400 text-sm">{errors.confirm}</p>
-             )}
-         </div>
+              {errors.confirm && (
+                <p className="text-red-400 text-sm">{errors.confirm}</p>
+              )}
+            </div>
           )}
-      </div>
+        </div>
 
         {/* Options */}
         {isLogin && (
@@ -172,7 +220,7 @@ export default function AuthPage() {
             </label>
 
             <span
-              onClick={() => alert("Reset password feature coming soon")}
+              onClick={() => alert("Reset password coming soon")}
               className="underline cursor-pointer"
             >
               Forgot Password
@@ -194,6 +242,7 @@ export default function AuthPage() {
           <span
             onClick={() => {
               setIsLogin(!isLogin);
+              setForm(initialState);
               setErrors({});
             }}
             className="text-blue-400 cursor-pointer"
