@@ -771,7 +771,6 @@ export default function Navbar({
                     </span>
                   </div>
                 </div>
-
                 <div className="py-1.5">
                   <button
                     onClick={() => { setOpenMenu(null); setShowPassword(true); }}
@@ -792,7 +791,6 @@ export default function Navbar({
                     </svg>
                   </button>
                 </div>
-
                 <div className="border-t border-gray-100 p-2">
                   <button
                     onClick={() => { setOpenMenu(null); setShowLogout(true); }}

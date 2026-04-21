@@ -1,9 +1,11 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, TrendingUp, Settings, CalendarDays } from "lucide-react";
-import BackButton from "../components/BackButton.js";
+import { LayoutDashboard, TrendingUp, Settings, CalendarDays, Menu } from "lucide-react";
+import BackButton from "../components/BackButton";
+import { useState } from "react";
 
 export default function Reports() {
   const location = useLocation();
+  const [open, setOpen] = useState(false);
 
   const menu = [
     { name: "Today's Report", path: "daily-report", icon: LayoutDashboard },
@@ -13,10 +15,26 @@ export default function Reports() {
   ];
 
   return (
-    <div className="h-screen flex bg-white/40 p-5">
+    <div className="h-screen flex bg-white/40 p-5 relative">
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#059669] backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col">
+      {/* 🔥 MOBILE MENU BUTTON */}
+      <button
+        onClick={() => setOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 bg-[#059669] text-white p-2 rounded-lg"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* 🔥 SIDEBAR (same UI) */}
+      <aside
+        className={`
+          fixed md:static top-0 left-0 h-full z-40
+          w-64 bg-[#059669] backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col
+          transform transition-transform duration-300
+          ${open ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0
+        `}
+      >
         <h1 className="text-2xl font-serif mb-10 tracking-wide">
           Reports
         </h1>
@@ -25,10 +43,12 @@ export default function Reports() {
           {menu.map((item, i) => {
             const Icon = item.icon;
             const active = location.pathname.includes(item.path);
+
             return (
               <Link
                 key={i}
                 to={item.path}
+                onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all
                   ${active ? "bg-white/20 text-white font-semibold" : "text-white hover:bg-white/20"}`}
               >
@@ -39,17 +59,24 @@ export default function Reports() {
           })}
         </nav>
 
-        {/* Bottom */}
-        <div className=" fixed bottom-0 left-0 p-3 sm:p-4 ">
-                <BackButton to="/dashboard" />
-              </div>
+        {/* 🔥 SAME BACK BUTTON (no change, just fixed properly) */}
+        <div className="mt-auto pt-6">
+          <BackButton to="/dashboard" />
+        </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 bg-white backdrop-blur-xl rounded-2xl ml-5 flex flex-col overflow-hidden">
+      {/* 🔥 OVERLAY (mobile only) */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+        />
+      )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+      {/* 🔥 MAIN */}
+      <main className="flex-1 bg-white backdrop-blur-xl rounded-2xl ml-0 md:ml-5 flex flex-col overflow-hidden">
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </div>
 

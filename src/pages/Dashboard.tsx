@@ -1,7 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";        
+import { useNavigate } from "react-router-dom";     
 import type { JSX } from "react";
 import restroImage from "../assets/restro4.jpg";
+import Navbar from "../components/Navbar";
 
 interface NavCard {
   title: string;
@@ -41,6 +41,7 @@ export default function Dashboard(): JSX.Element {
           onSettingsClick={() => navigate("/settings")}
           onProfileClick={() => navigate("/profile")}
         />
+        
 
         {/* Main Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
