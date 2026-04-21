@@ -10,6 +10,7 @@ import InventoryManagement from "./Inventory/Inventorymanagement";
 import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
 import TopProductsDashboard from "./Report/Subreport/TopSellingProducts";
+import SettingsPage from "./components/Setting";
 
 export default function App() {
   return (
@@ -21,6 +22,8 @@ export default function App() {
         <Route path="/inventory" element={<InventoryManagement />} />
         <Route path="/billing" element={<RestaurantPOS />} />
         <Route path="/menu" element={<Menupage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+    
 
         {/* REPORTS */}
         <Route path="/reports" element={<Reports />}>
