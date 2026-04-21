@@ -1,19 +1,45 @@
 import jsPDF from "jspdf";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-export default function MonthlyReport() {
+interface TopItem {
+  name: string;
+  qty: number;
+}
 
-  const today = new Date();
+interface PaymentData {
+  cash: number;
+  upi: number;
+  card: number;
+}
 
-  const monthName = today.toLocaleString("default", {
+interface ReportData {
+  totalSales: number;
+  discount: number;
+  refund: number;
+  orders: number;
+  avgOrder: number;
+  payment: PaymentData;
+  topItems: TopItem[];
+}
+
+interface PieEntry {
+  name: string;
+  value: number;
+}
+
+export default function MonthlyReport(): React.ReactNode {
+
+  const today: Date = new Date();
+
+  const monthName: string = today.toLocaleString("default", {
     month: "long",
     year: "numeric",
   });
 
-  const data = {
+  const data: ReportData = {
     totalSales: 120000,
     discount: 10000,
     refund: 5000,
@@ -31,19 +57,20 @@ export default function MonthlyReport() {
     ],
   };
 
-  const netSales = data.totalSales - data.discount - data.refund;
+  const netSales: number = data.totalSales - data.discount - data.refund;
 
-  // 🔥 Chart Data
-  const barData = data.topItems;
+  const barData: TopItem[] = data.topItems;
 
-  const pieData = Object.entries(data.payment).map(([key, value]) => ({
-    name: key,
-    value: value,
-  }));
+  const pieData: PieEntry[] = Object.entries(data.payment).map(
+    ([key, value]: [string, number]) => ({
+      name: key,
+      value: value,
+    })
+  );
 
-  const COLORS = ["#7c3aed", "#ec4899", "#22c55e"];
+  const COLORS: string[] = ["#7c3aed", "#ec4899", "#22c55e"];
 
-  const downloadPDF = () => {
+  const downloadPDF = (): void => {
     const doc = new jsPDF();
 
     doc.text("Monthly Report", 20, 20);
@@ -58,68 +85,62 @@ export default function MonthlyReport() {
 
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Monthly Report
-        </h1>
+        <h1 className="text-2xl font-serif text-gray-800">Monthly Report</h1>
         <p className="text-gray-500">{monthName}</p>
       </div>
 
       {/* Cards */}
       <div className="grid grid-cols-4 gap-4">
-
-        <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
           <p>Total Sales</p>
           <h2 className="font-bold">₹{data.totalSales}</h2>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
           <p>Discount</p>
           <h2 className="text-yellow-600 font-bold">₹{data.discount}</h2>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
           <p>Refund</p>
           <h2 className="text-red-500 font-bold">₹{data.refund}</h2>
         </div>
 
-        <div className="bg-linear-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl shadow">
+        <div className="bg-linear-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
           <p>Net Sales</p>
           <h2 className="font-bold">₹{netSales}</h2>
         </div>
-
       </div>
 
       {/* Orders */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
           Orders: <b>{data.orders}</b>
         </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm">
+        <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
           Avg Order: <b>₹{data.avgOrder}</b>
         </div>
       </div>
 
-      {/* 🔥 CHART SECTION */}
+      {/* Chart Section */}
       <div className="grid grid-cols-2 gap-6">
 
-        {/* 🔥 Bar Chart */}
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        {/* Bar Chart */}
+        <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
           <p className="mb-3 font-semibold">Top Products</p>
-
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={barData}>
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
-              <Bar dataKey="qty" fill="#7c3aed" radius={[6,6,0,0]} />
+              <Tooltip cursor={false} />
+              <Bar dataKey="qty" fill="#7c3aed" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* 🔥 Pie Chart */}
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        {/* Pie Chart */}
+        <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
           <p className="mb-3 font-semibold">Payment Methods</p>
-
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -129,9 +150,9 @@ export default function MonthlyReport() {
                 outerRadius={80}
                 label
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
+                {pieData.map((entry: PieEntry, index: number) => (
+                <Cell key={index} fill={COLORS[index % COLORS.length] ?? "#cccccc"} />
+               ))}
               </Pie>
               <Legend />
             </PieChart>
@@ -141,10 +162,9 @@ export default function MonthlyReport() {
       </div>
 
       {/* Top Products List */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
         <h2 className="font-semibold mb-4">Top Selling Products</h2>
-
-        {data.topItems.map((item, i) => (
+        {data.topItems.map((item: TopItem, i: number) => (
           <div key={i} className="flex justify-between border-b py-2">
             <span>{item.name}</span>
             <span className="font-semibold">{item.qty} sold</span>
@@ -155,7 +175,7 @@ export default function MonthlyReport() {
       {/* Download */}
       <button
         onClick={downloadPDF}
-        className="px-6 py-2 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-lg shadow hover:scale-105 transition"
+        className="px-6 py-2 bg-linear-to-r from-red-500 to-red-500 text-white rounded-lg shadow hover:scale-105 transition"
       >
         📄 Download Report
       </button>
