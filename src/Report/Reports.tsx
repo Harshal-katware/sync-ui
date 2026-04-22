@@ -1,10 +1,10 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation , useNavigate } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Settings, CalendarDays, Menu } from "lucide-react";
-import BackButton from "../components/BackButton";
 import { useState } from "react";
 
 export default function Reports() {
   const location = useLocation();
+   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const menu = [
@@ -17,7 +17,7 @@ export default function Reports() {
   return (
     <div className="h-screen flex bg-white/40 p-5 relative">
 
-      {/* 🔥 MOBILE MENU BUTTON */}
+      {/*  MOBILE MENU BUTTON */}
       <button
         onClick={() => setOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 bg-[#059669] text-white p-2 rounded-lg"
@@ -25,7 +25,7 @@ export default function Reports() {
         <Menu size={20} />
       </button>
 
-      {/* 🔥 SIDEBAR (same UI) */}
+      {/*  SIDEBAR (same UI) */}
       <aside
         className={`
           fixed md:static top-0 left-0 h-full z-40
@@ -59,13 +59,18 @@ export default function Reports() {
           })}
         </nav>
 
-        {/* 🔥 SAME BACK BUTTON (no change, just fixed properly) */}
+        {/*  SAME BACK BUTTON (no change, just fixed properly) */}
         <div className="mt-auto pt-6">
-          <BackButton to="/dashboard" />
+          <button
+                onClick={() => navigate("/dashboard")}
+                className="px-5 py-2  text-white rounded-lg hover:bg-white/20 transition"
+             >
+                    ← Back
+           </button>
         </div>
       </aside>
 
-      {/* 🔥 OVERLAY (mobile only) */}
+      {/*  OVERLAY (mobile only) */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -73,7 +78,7 @@ export default function Reports() {
         />
       )}
 
-      {/* 🔥 MAIN */}
+      {/*  MAIN */}
       <main className="flex-1 bg-white backdrop-blur-xl rounded-2xl ml-0 md:ml-5 flex flex-col overflow-hidden">
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
