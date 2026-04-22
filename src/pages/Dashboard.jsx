@@ -27,12 +27,13 @@ export default function Dashboard() {
       {/* Content */}
       <div className="relative z-10">
         
-        <Navbar
+        {/* <Navbar
           variant="dashboard"
           appName="Sync Restaurant"
           onSettingsClick={() => navigate("/settings")}
           onProfileClick={() => navigate("/profile")}
-        />
+        /> */}
+        <Navbar variant="dashboard" />
 
         <div className="p-8 max-w-5xl">
           

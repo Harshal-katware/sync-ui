@@ -2,16 +2,35 @@ import { useState } from "react";
 import BackButton from "../components/BackButton";
 import Navbar from "../components/Navbar";
 
-const initialItems = [
-  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg" },
-  { id: 2, name: "Chicken Biryani", price: 280, category: "Non-Veg" },
-  { id: 3, name: "Dal Tadka", price: 150, category: "Veg" },
-  { id: 4, name: "Mutton Rogan Josh", price: 380, category: "Non-Veg" },
-  { id: 5, name: "Veg Thali", price: 200, category: "Veg" },
+// ─── Types ─────────────────────────────────────────────────────────────────────
+type Category = "Veg" | "Non-Veg";
+type FilterOption = "All" | Category;
+
+interface MenuItem {
+  id: number;
+  name: string;
+  price: number;
+  category: Category;
+}
+
+interface MenuForm {
+  name: string;
+  price: string;
+  category: Category;
+}
+
+// ─── Initial data ──────────────────────────────────────────────────────────────
+const initialItems: MenuItem[] = [
+  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg"     },
+  { id: 2, name: "Chicken Biryani",      price: 280, category: "Non-Veg" },
+  { id: 3, name: "Dal Tadka",            price: 150, category: "Veg"     },
+  { id: 4, name: "Mutton Rogan Josh",    price: 380, category: "Non-Veg" },
+  { id: 5, name: "Veg Thali",            price: 200, category: "Veg"     },
 ];
 
-const defaultForm = { name: "", price: "", category: "Veg" };
+const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
 
+// ─── Badges ────────────────────────────────────────────────────────────────────
 const VegBadge = () => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#edf7f0] text-[#1e7a3e] border border-[#a8d8b8]">
     <span className="w-1.5 h-1.5 rounded-full bg-[#2ecc71]" />
@@ -26,52 +45,61 @@ const NonVegBadge = () => (
   </span>
 );
 
+// ─── Main ──────────────────────────────────────────────────────────────────────
 export default function MenuPage() {
-  const [items, setItems] = useState(initialItems);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState(defaultForm);
-  const [nextId, setNextId] = useState(6);
+  const [items, setItems]       = useState<MenuItem[]>(initialItems);
+  const [search, setSearch]     = useState<string>("");
+  const [filter, setFilter]     = useState<FilterOption>("All");
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [editId, setEditId]     = useState<number | null>(null);
+  const [form, setForm]         = useState<MenuForm>(defaultForm);
+  const [nextId, setNextId]     = useState<number>(6);
 
-  const matchesSearch = (name, query) => {
-  if (!query) return true;
-  const q = query.toLowerCase();
-  const lower = name.toLowerCase();
+  const matchesSearch = (name: string, query: string): boolean => {
+    if (!query) return true;
+    const q     = query.toLowerCase();
+    const lower = name.toLowerCase();
+    if (lower.includes(q)) return true;
+    // Abbreviation match: first letter of each word
+    const initials = name
+      .split(" ")
+      .map((w) => w[0].toLowerCase())
+      .join("");
+    return initials.includes(q);
+  };
 
-  // Normal substring match
-  if (lower.includes(q)) return true;
+  const filtered = items.filter(
+    (i) =>
+      matchesSearch(i.name, search) &&
+      (filter === "All" || i.category === filter)
+  );
 
-  // Abbreviation match: first letter of each word
-  const initials = name
-    .split(" ")
-    .map((w) => w[0].toLowerCase())
-    .join("");
-  return initials.includes(q);
-};
-
-const filtered = items.filter(
-  (i) =>
-    matchesSearch(i.name, search) &&
-    (filter === "All" || i.category === filter)
-);
-
-  const vegCount = items.filter((i) => i.category === "Veg").length;
+  const vegCount    = items.filter((i) => i.category === "Veg").length;
   const nonVegCount = items.filter((i) => i.category === "Non-Veg").length;
 
-  const openAdd = () => { setEditId(null); setForm(defaultForm); setShowModal(true); };
-  const openEdit = (item) => {
+  const openAdd = (): void => {
+    setEditId(null);
+    setForm(defaultForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (item: MenuItem): void => {
     setEditId(item.id);
     setForm({ name: item.name, price: String(item.price), category: item.category });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setEditId(null); setForm(defaultForm); };
 
-  const handleSave = () => {
-    const trimmedName = form.name.trim();
-    const parsedPrice = parseInt(form.price);
+  const closeModal = (): void => {
+    setShowModal(false);
+    setEditId(null);
+    setForm(defaultForm);
+  };
+
+  const handleSave = (): void => {
+    const trimmedName  = form.name.trim();
+    const parsedPrice  = parseInt(form.price);
     if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
+
     if (editId !== null) {
       setItems((prev) =>
         prev.map((i) =>
@@ -90,40 +118,32 @@ const filtered = items.filter(
     closeModal();
   };
 
-  const handleDelete = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
+  const handleDelete = (id: number): void =>
+    setItems((prev) => prev.filter((i) => i.id !== id));
+
+  // Field config for the modal form
+  const modalFields: { label: string; key: keyof Pick<MenuForm, "name" | "price">; type: string; placeholder: string }[] = [
+    { label: "Item Name", key: "name",  type: "text",   placeholder: "e.g. Paneer Tikka" },
+    { label: "Price (₹)", key: "price", type: "number", placeholder: "e.g. 250"          },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans pb-20">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');`}</style>
 
-      {/* Header */}
-      {/* <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-[26px] font-serif text-white tracking-wide">
-            Menu Manager
-          </h1>
-          <p className="text-[10px] sm:text-[11px] text-[#d8d8d7] tracking-[2px] uppercase mt-1 font-semibold">
-            Restaurant Management System
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] text-[12px] sm:text-[13px] font-medium px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg whitespace-nowrap"
-        >
-          + Add New Item
-        </button>
-      </div> */}
       <Navbar variant="module" moduleName="Menu Manager" />
 
       <div className="px-4 sm:px-6 lg:px-8">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 mb-5">
-          {[
-            { label: "Total Items", value: items.length, gold: true },
-            { label: "Veg", value: vegCount, gold: false },
-            { label: "Non-Veg", value: nonVegCount, gold: false },
-          ].map((s) => (
+          {(
+            [
+              { label: "Total Items", value: items.length, gold: true  },
+              { label: "Veg",         value: vegCount,     gold: false },
+              { label: "Non-Veg",     value: nonVegCount,  gold: false },
+            ] as { label: string; value: number; gold: boolean }[]
+          ).map((s) => (
             <div key={s.label} className="bg-white border border-[#e2d9c9] rounded-xl px-3 sm:px-5 py-3 sm:py-4">
               <p className="text-[9px] sm:text-[11px] text-[#9b8e75] uppercase tracking-[1.5px] mb-1 truncate">
                 {s.label}
@@ -141,7 +161,7 @@ const filtered = items.filter(
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               placeholder="Search menu items..."
               className="w-full bg-white border border-[#e2d9c9] rounded-lg pl-9 pr-3 py-2 text-[13px] text-[#1a1200] placeholder-[#c5b99e] outline-none focus:border-[#c9a84c] transition-colors"
             />
@@ -151,7 +171,7 @@ const filtered = items.filter(
             </svg>
           </div>
           <div className="flex gap-2">
-            {["All", "Veg", "Non-Veg"].map((f) => (
+            {(["All", "Veg", "Non-Veg"] as FilterOption[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -163,9 +183,7 @@ const filtered = items.filter(
               >
                 {f}
               </button>
-              
             ))}
-            
             <button
               onClick={openAdd}
               className="flex items-center gap-2 bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] text-[12px] sm:text-[13px] font-medium px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg whitespace-nowrap"
@@ -182,7 +200,10 @@ const filtered = items.filter(
               <thead className="bg-[#faf7f0] sticky top-0 z-10">
                 <tr>
                   {["#", "Item Name", "Price", "Category", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-3.5 text-left text-[10.5px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap">
+                    <th
+                      key={h}
+                      className="px-5 py-3.5 text-left text-[10.5px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap"
+                    >
                       {h}
                     </th>
                   ))}
@@ -200,7 +221,10 @@ const filtered = items.filter(
                     <tr key={item.id} className="border-t border-[#f0ebe0] hover:bg-[#faf7f0] transition-colors">
                       <td className="px-5 py-3.5 text-[#c5b99e] text-[12px]">{idx + 1}</td>
                       <td className="px-5 py-3.5 font-medium text-[#1a1200]">{item.name}</td>
-                      <td className="px-5 py-3.5 text-[#c9a84c] text-[15px] font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
+                      <td
+                        className="px-5 py-3.5 text-[#c9a84c] text-[15px] font-medium"
+                        style={{ fontFamily: "'Playfair Display', serif" }}
+                      >
                         ₹{item.price}
                       </td>
                       <td className="px-5 py-3.5">
@@ -208,10 +232,16 @@ const filtered = items.filter(
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex gap-2">
-                          <button onClick={() => openEdit(item)} className="px-3 py-1 text-[11.5px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#c9a84c] hover:text-[#9a7a20] hover:bg-[#c9a84c]/10 transition-colors">
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="px-3 py-1 text-[11.5px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#c9a84c] hover:text-[#9a7a20] hover:bg-[#c9a84c]/10 transition-colors"
+                          >
                             Edit
                           </button>
-                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-[11.5px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#e74c3c] hover:text-[#c0392b] hover:bg-[#e74c3c]/10 transition-colors">
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="px-3 py-1 text-[11.5px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#e74c3c] hover:text-[#c0392b] hover:bg-[#e74c3c]/10 transition-colors"
+                          >
                             Delete
                           </button>
                         </div>
@@ -243,7 +273,10 @@ const filtered = items.filter(
                 </div>
                 {/* Bottom row: price + actions */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#c9a84c] text-[15px] font-medium" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  <span
+                    className="text-[#c9a84c] text-[15px] font-medium"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
                     ₹{item.price}
                   </span>
                   <div className="flex gap-2">
@@ -265,7 +298,6 @@ const filtered = items.filter(
             ))
           )}
         </div>
-
       </div>
 
       {/* Back button */}
@@ -277,22 +309,27 @@ const filtered = items.filter(
       {showModal && (
         <div
           className="fixed inset-0 bg-[#1a1200]/45 flex items-center justify-center z-50 px-4"
-          onClick={(e) => e.target === e.currentTarget && closeModal()}
+          onClick={(e: React.MouseEvent<HTMLDivElement>) =>
+            e.target === e.currentTarget && closeModal()
+          }
         >
           <div className="bg-white border border-[#e2d9c9] rounded-2xl p-5 sm:p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5 sm:mb-6">
-              <h2 className="text-[17px] sm:text-[19px] font-medium text-[#1a1200]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h2
+                className="text-[17px] sm:text-[19px] font-medium text-[#1a1200]"
+                style={{ fontFamily: "'Playfair Display', serif" }}
+              >
                 {editId !== null ? "Edit Item" : "Add New Item"}
               </h2>
-              <button onClick={closeModal} className="text-[#9b8e75] hover:text-[#1a1200] text-xl leading-none px-1 transition-colors">
+              <button
+                onClick={closeModal}
+                className="text-[#9b8e75] hover:text-[#1a1200] text-xl leading-none px-1 transition-colors"
+              >
                 ×
               </button>
             </div>
 
-            {[
-              { label: "Item Name", key: "name", type: "text", placeholder: "e.g. Paneer Tikka" },
-              { label: "Price (₹)", key: "price", type: "number", placeholder: "e.g. 250" },
-            ].map((field) => (
+            {modalFields.map((field) => (
               <div key={field.key} className="mb-3.5">
                 <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">
                   {field.label}
@@ -302,7 +339,9 @@ const filtered = items.filter(
                   value={form[field.key]}
                   placeholder={field.placeholder}
                   min={field.type === "number" ? 0 : undefined}
-                  onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setForm({ ...form, [field.key]: e.target.value })
+                  }
                   className="w-full bg-[#faf7f0] border border-[#e2d9c9] rounded-lg px-3.5 py-2.5 text-[13.5px] text-[#1a1200] placeholder-[#c5b99e] outline-none focus:border-[#c9a84c] transition-colors"
                 />
               </div>
@@ -314,7 +353,9 @@ const filtered = items.filter(
               </label>
               <select
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setForm({ ...form, category: e.target.value as Category })
+                }
                 className="w-full bg-[#faf7f0] border border-[#e2d9c9] rounded-lg px-3.5 py-2.5 text-[13.5px] text-[#1a1200] outline-none focus:border-[#c9a84c] transition-colors cursor-pointer"
               >
                 <option value="Veg">Veg</option>
@@ -323,10 +364,16 @@ const filtered = items.filter(
             </div>
 
             <div className="flex justify-end gap-2 sm:gap-3">
-              <button onClick={closeModal} className="px-4 sm:px-5 py-2 text-[13px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#b8ac9a] hover:text-[#1a1200] transition-colors">
+              <button
+                onClick={closeModal}
+                className="px-4 sm:px-5 py-2 text-[13px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#b8ac9a] hover:text-[#1a1200] transition-colors"
+              >
                 Cancel
               </button>
-              <button onClick={handleSave} className="px-4 sm:px-5 py-2 text-[13px] font-medium bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] rounded-lg transition-colors">
+              <button
+                onClick={handleSave}
+                className="px-4 sm:px-5 py-2 text-[13px] font-medium bg-[#c9a84c] hover:bg-[#b8943e] text-[#1a1200] rounded-lg transition-colors"
+              >
                 {editId !== null ? "Save Changes" : "Add Item"}
               </button>
             </div>

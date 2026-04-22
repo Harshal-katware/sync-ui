@@ -9,6 +9,7 @@ import TopSellingProducts from "./Report/Subreport/TopSellingProducts";
 import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
 import InventoryManagement from "./Inventory/Inventorymanagement";
+import SettingsPage from "./components/Settingspage";
 
 export default function App() {
   return (
@@ -26,6 +27,8 @@ export default function App() {
         <Route path="/reports/top-selling-products" element={<TopSellingProducts />} />
         <Route path="/reports/customization" element={<Customization />} />
         <Route path="/reports/monthly-report" element={<MonthlyReport />} /> 
+        
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </BrowserRouter>
   );
