@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import BackButton from "../components/BackButton.js";
 import Navbar from "../components/Navbar.js";
+
+const API = "http://localhost:8080/api/inventory";
 
 // ─── TYPES ───────────────────────────────────────────────────────────
 type Item = {
@@ -21,16 +23,6 @@ type LogEntry = {
 };
 
 type ModalType = { type: "IN" | "OUT" } | null;
-
-// ─── Dummy seed data ─────────────────────────────────────────────────
-const SEED_ITEMS: Item[] = [
-  { id: 1, name: "Paneer", unit: "kg", stock: 18, minQty: 5 },
-  { id: 2, name: "Tomatoes", unit: "kg", stock: 12, minQty: 4 },
-  { id: 3, name: "Onions", unit: "kg", stock: 30, minQty: 8 },
-  { id: 4, name: "Rice", unit: "kg", stock: 50, minQty: 10 },
-  { id: 5, name: "Milk", unit: "L", stock: 3, minQty: 5 },
-  { id: 6, name: "Butter", unit: "kg", stock: 2, minQty: 3 },
-];
 
 // ─── Low Stock Alert ─────────────────────────────────────────────────
 function LowStockAlert({
@@ -153,7 +145,9 @@ function StatCard({
 
 // ─── MAIN ────────────────────────────────────────────────────────────
 export default function InventoryManagement() {
-  const [items, setItems] = useState<Item[]>(SEED_ITEMS);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string>("");
   const [log, setLog] = useState<LogEntry[]>([]);
   const [alerts, setAlerts] = useState<Item[]>([]);
   const [dismissedIds, setDismissed] = useState<Set<number>>(new Set());
@@ -176,6 +170,26 @@ export default function InventoryManagement() {
     minQty: "",
   });
   const [formErr, setFormErr] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
+
+  // ── Fetch all items from backend ──
+  const fetchItems = useCallback(async () => {
+    try {
+      setApiError("");
+      const res = await fetch(API);
+      if (!res.ok) throw new Error("Failed to load inventory.");
+      const data: Item[] = await res.json();
+      setItems(data);
+    } catch (e: any) {
+      setApiError(e.message || "Could not connect to server.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   useEffect(() => {
     setAlerts(
@@ -191,7 +205,8 @@ export default function InventoryManagement() {
       minute: "2-digit",
     });
 
-  const handleTransaction = () => {
+  // ── Stock In / Mark Used ──
+  const handleTransaction = async () => {
     setFormErr("");
     const item = items.find((i) => i.id === Number(form.itemId));
     const qty = parseFloat(form.qty);
@@ -201,68 +216,91 @@ export default function InventoryManagement() {
     if (modal?.type === "OUT" && qty > item.stock)
       return setFormErr(`Only ${item.stock} ${item.unit} available.`);
 
-    setItems((p) =>
-      p.map((i) =>
-        i.id === item.id
-          ? {
-              ...i,
-              stock: modal?.type === "IN" ? i.stock + qty : i.stock - qty,
-            }
-          : i,
-      ),
-    );
+    const endpoint =
+      modal?.type === "IN"
+        ? `${API}/${item.id}/stock-in`
+        : `${API}/${item.id}/mark-used`;
 
-    setLog((p) => [
-      {
-        id: Date.now(),
-        type: modal!.type,
-        name: item.name,
-        qty,
-        unit: item.unit,
-        time: now(),
-      },
-      ...p,
-    ]);
-
-    if (modal?.type === "IN") {
-      setDismissed((p) => {
-        const n = new Set(p);
-        n.delete(item.id);
-        return n;
+    try {
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qty }),
       });
-    }
 
-    setModal(null);
-    setForm({ itemId: "", qty: "" });
+      if (!res.ok) {
+        const err = await res.json();
+        return setFormErr(err.error || "Transaction failed.");
+      }
+
+      const updated: Item = await res.json();
+
+      // Update item in local state with fresh data from backend
+      setItems((p) => p.map((i) => (i.id === updated.id ? updated : i)));
+
+      setLog((p) => [
+        {
+          id: Date.now(),
+          type: modal!.type,
+          name: item.name,
+          qty,
+          unit: item.unit,
+          time: now(),
+        },
+        ...p,
+      ]);
+
+      if (modal?.type === "IN") {
+        setDismissed((p) => {
+          const n = new Set(p);
+          n.delete(item.id);
+          return n;
+        });
+      }
+
+      setModal(null);
+      setForm({ itemId: "", qty: "" });
+    } catch {
+      setFormErr("Network error. Please try again.");
+    }
   };
 
-  const handleAddItem = () => {
+  // ── Add New Item ──
+  const handleAddItem = async () => {
     setFormErr("");
     if (!newItem.name.trim()) return setFormErr("Item name is required.");
     if (!newItem.minQty || parseFloat(newItem.minQty) < 0)
       return setFormErr("Enter a valid minimum quantity.");
 
-    setItems((p) => [
-      ...p,
-      {
-        id: Date.now(),
-        name: newItem.name.trim(),
-        unit: newItem.unit,
-        stock: parseFloat(newItem.stock) || 0,
-        minQty: parseFloat(newItem.minQty),
-      },
-    ]);
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newItem.name.trim(),
+          unit: newItem.unit,
+          stock: parseFloat(newItem.stock) || 0,
+          minQty: parseFloat(newItem.minQty),
+        }),
+      });
 
-    setAddItemModal(false);
-    setNewItem({ name: "", unit: "kg", stock: "0", minQty: "" });
+      if (!res.ok) {
+        const err = await res.json();
+        return setFormErr(err.error || "Failed to add item.");
+      }
+
+      const created: Item = await res.json();
+      setItems((p) => [...p, created]);
+      setAddItemModal(false);
+      setNewItem({ name: "", unit: "kg", stock: "0", minQty: "" });
+    } catch {
+      setFormErr("Network error. Please try again.");
+    }
   };
-
-  const [search, setSearch] = useState<string>("");
 
   const filteredItems = items.filter((i) =>
     i.name.toLowerCase().includes(search.toLowerCase()),
   );
-
   const lowCount = items.filter((i) => i.stock <= i.minQty).length;
   const todayIn = log
     .filter((l) => l.type === "IN")
@@ -283,20 +321,20 @@ export default function InventoryManagement() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap%27);
         @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes fadeIn    { from{opacity:0;transform:scale(.97)}        to{opacity:1;transform:scale(1)}    }
+        @keyframes spin      { to { transform: rotate(360deg); } }
         .card-hover { transition:box-shadow .2s,transform .2s; }
         .card-hover:hover { box-shadow:0 8px 32px rgba(0,0,0,.10); transform:translateY(-2px); }
         .stock-scroll::-webkit-scrollbar { width:4px; }
         .stock-scroll::-webkit-scrollbar-track { background:#f5f5f4; border-radius:99px; }
         .stock-scroll::-webkit-scrollbar-thumb { background:#d6d3d1; border-radius:99px; }
         .stock-scroll::-webkit-scrollbar-thumb:hover { background:#a8a29e; }
+        .spinner { width:32px;height:32px;border:3px solid #fde68a;border-top-color:#d97706;border-radius:50%;animation:spin .7s linear infinite; }
       `}</style>
 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
+      <Navbar variant="module" moduleName="Menu Manager" />
 
-      {/* NAVAGATION BAR */}
-       <Navbar variant="module" moduleName="Menu Manager" />
-       
-      {/* ══ TAB BAR (separate from navbar) ═════════════════════════════════════ */}
+      {/* TAB BAR */}
       <div className="bg-white border-b border-gray-200 shadow-sm mt-1">
         <div className="w-full px-6 flex">
           {[
@@ -322,367 +360,397 @@ export default function InventoryManagement() {
         </div>
       </div>
 
-      {/* ══ MAIN CONTENT ════════════════════════════════════════════════════════ */}
-      <main className="w-full px-4 sm:px-6 py-4 flex-1 overflow-hidden">
-        {/* ── DASHBOARD ── */}
-        {activeTab === "dashboard" && (
-          <div style={{ animation: "fadeIn .4s ease" }}>
-            {/* Stat cards */}
-            <div className="grid grid-cols-4 gap-3 mb-4 w-full py-">
-              <StatCard
-                label="Total Items"
-                value={items.length}
-                accent="#1c1917"
-              />
-              <StatCard
-                label="Low Stock"
-                value={lowCount}
-                accent={lowCount ? "#ea580c" : "#16a34a"}
-              />
-              <StatCard
-                label="Stocked Today"
-                value={todayIn.toFixed(1)}
-                accent="#16a34a"
-              />
-              <StatCard
-                label="Used Today"
-                value={todayUsed.toFixed(1)}
-                accent="#ea580c"
-              />
-            </div>
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="mx-4 mt-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50 flex items-center justify-between gap-3">
+          <span className="text-sm text-red-600 font-medium">⚠ {apiError}</span>
+          <button
+            onClick={fetchItems}
+            className="text-xs font-bold text-red-700 underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
-            {/* Current Stock card — constrained width */}
-            <div className="max-w-6xl mx-auto">
-              <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-                {/* ── Card header: title + action buttons ── */}
-                <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-                  <h2
-                    style={{
-                      fontFamily: "'Playfair Display',serif",
-                      fontWeight: 700,
-                      fontSize: "1.05rem",
-                    }}
-                  >
-                    Current Stock
-                  </h2>
-                  {/* Search bar */}
-                  <div className="relative flex-1 min-w-50 max-w-sm">
-                    <svg
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search items..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
-                    />
-                    {search && (
-                      <button
-                        onClick={() => setSearch("")}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-xs"
+      {/* MAIN CONTENT */}
+      <main className="w-full px-4 sm:px-6 py-4 flex-1 overflow-hidden">
+        {/* Loading state */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <div className="spinner" />
+            <p className="text-sm text-gray-400 font-medium">
+              Loading inventory...
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* DASHBOARD */}
+            {activeTab === "dashboard" && (
+              <div style={{ animation: "fadeIn .4s ease" }}>
+                <div className="grid grid-cols-4 gap-3 mb-4 w-full">
+                  <StatCard
+                    label="Total Items"
+                    value={items.length}
+                    accent="#1c1917"
+                  />
+                  <StatCard
+                    label="Low Stock"
+                    value={lowCount}
+                    accent={lowCount ? "#ea580c" : "#16a34a"}
+                  />
+                  <StatCard
+                    label="Stocked Today"
+                    value={todayIn.toFixed(1)}
+                    accent="#16a34a"
+                  />
+                  <StatCard
+                    label="Used Today"
+                    value={todayUsed.toFixed(1)}
+                    accent="#ea580c"
+                  />
+                </div>
+
+                <div className="max-w-6xl mx-auto">
+                  <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
+                    <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                      <h2
+                        style={{
+                          fontFamily: "'Playfair Display',serif",
+                          fontWeight: 700,
+                          fontSize: "1.05rem",
+                        }}
                       >
-                        ✕
-                      </button>
-                    )}
+                        Current Stock
+                      </h2>
+                      <div className="relative flex-1 min-w-50 max-w-sm">
+                        <svg
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        >
+                          <circle cx="11" cy="11" r="8" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search items..."
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                        />
+                        {search && (
+                          <button
+                            onClick={() => setSearch("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => {
+                            setModal({ type: "IN" });
+                            setFormErr("");
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                          style={{
+                            background:
+                              "linear-gradient(135deg,#16a34a,#15803d)",
+                          }}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          >
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Stock In
+                        </button>
+                        <button
+                          onClick={() => {
+                            setModal({ type: "OUT" });
+                            setFormErr("");
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                          style={{
+                            background:
+                              "linear-gradient(135deg,#ea580c,#c2410c)",
+                          }}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          >
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Mark Used
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAddItemModal(true);
+                            setFormErr("");
+                          }}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95"
+                          style={{
+                            color: "#d97706",
+                            borderColor: "#fde68a",
+                            background: "#fffbeb",
+                          }}
+                        >
+                          + Add Item
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      className="stock-scroll overflow-y-auto divide-y divide-gray-50"
+                      style={{ maxHeight: "calc(100vh - 380px)" }}
+                    >
+                      {filteredItems.length === 0 ? (
+                        <div className="py-12 text-center text-gray-400">
+                          <p className="text-3xl mb-2">🔍</p>
+                          <p className="font-medium text-sm">
+                            No items match "
+                            <span className="text-gray-600">{search}</span>"
+                          </p>
+                        </div>
+                      ) : (
+                        filteredItems.map((item) => {
+                          const pct = Math.min(
+                            (item.stock / (item.minQty * 4)) * 100,
+                            100,
+                          );
+                          const isLow = item.stock <= item.minQty;
+                          return (
+                            <div
+                              key={item.id}
+                              className="px-5 py-4 flex items-center gap-4 card-hover"
+                            >
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                                style={{
+                                  background: isLow ? "#fff7ed" : "#f0fdf4",
+                                }}
+                              >
+                                {isLow ? "⚠️" : "✅"}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="font-semibold text-gray-800 text-base"
+                                    style={{
+                                      fontFamily: "'Playfair Display',serif",
+                                    }}
+                                  >
+                                    {item.name}
+                                  </span>
+                                  {isLow && (
+                                    <span
+                                      className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                      style={{
+                                        background: "#fee2e2",
+                                        color: "#b91c1c",
+                                      }}
+                                    >
+                                      LOW
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all"
+                                      style={{
+                                        width: `${pct}%`,
+                                        background: isLow
+                                          ? "#f97316"
+                                          : "#22c55e",
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-400 shrink-0">
+                                    min {item.minQty} {item.unit}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p
+                                  className={`text-2xl font-black ${isLow ? "text-orange-600" : "text-gray-800"}`}
+                                  style={{
+                                    fontFamily: "'Playfair Display',serif",
+                                  }}
+                                >
+                                  {item.stock}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {item.unit}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => {
-                        setModal({ type: "IN" });
-                        setFormErr("");
-                      }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                </div>
+              </div>
+            )}
+
+            {/* TODAY'S LOG */}
+            {activeTab === "log" && (
+              <div style={{ animation: "fadeIn .4s ease" }}>
+                <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <h2
                       style={{
-                        background: "linear-gradient(135deg,#16a34a,#15803d)",
+                        fontFamily: "'Playfair Display',serif",
+                        fontWeight: 700,
+                        fontSize: "1.05rem",
                       }}
                     >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      Stock In
-                    </button>
-                    <button
-                      onClick={() => {
-                        setModal({ type: "OUT" });
-                        setFormErr("");
-                      }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                      Today's Transactions
+                    </h2>
+                  </div>
+                  {log.length === 0 ? (
+                    <div className="py-20 text-center text-gray-400">
+                      <p className="text-4xl mb-3">📋</p>
+                      <p className="font-medium">No transactions yet today.</p>
+                      <p className="text-sm mt-1">
+                        Use "Stock In" or "Mark Used" to log activity.
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className="stock-scroll overflow-y-auto p-3 flex flex-col gap-2"
+                      style={{ maxHeight: "480px" }}
+                    >
+                      {log.map((e) => (
+                        <LogRow key={e.id} entry={e} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ITEMS */}
+            {activeTab === "items" && (
+              <div style={{ animation: "fadeIn .4s ease" }}>
+                <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
+                  <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+                    <h2
                       style={{
-                        background: "linear-gradient(135deg,#ea580c,#c2410c)",
+                        fontFamily: "'Playfair Display',serif",
+                        fontWeight: 700,
+                        fontSize: "1.05rem",
                       }}
                     >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      >
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      Mark Used
-                    </button>
+                      All Items & Triggers
+                    </h2>
                     <button
                       onClick={() => {
                         setAddItemModal(true);
                         setFormErr("");
                       }}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95"
-                      style={{
-                        color: "#d97706",
-                        borderColor: "#fde68a",
-                        background: "#fffbeb",
-                      }}
+                      className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors"
                     >
                       + Add Item
                     </button>
                   </div>
-                </div>
-
-                {/* ── Scrollable stock list ── */}
-                <div
-                  className="stock-scroll overflow-y-auto thin-scroll divide-y divide-gray-50"
-                  style={{ maxHeight: "calc(100vh - 380px)" }}
-                >
-                  {filteredItems.length === 0 ? (
-                    <div className="py-12 text-center text-gray-400">
-                      <p className="text-3xl mb-2">🔍</p>
-                      <p className="font-medium text-sm">
-                        No items match "
-                        <span className="text-gray-600">{search}</span>"
-                      </p>
-                    </div>
-                  ) : (
-                    filteredItems.map((item) => {
-                      const pct = Math.min(
-                        (item.stock / (item.minQty * 4)) * 100,
-                        100,
-                      );
-                      const isLow = item.stock <= item.minQty;
-                      return (
-                        <div
-                          key={item.id}
-                          className="px-5 py-4 flex items-center gap-4 card-hover"
-                        >
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                            style={{
-                              background: isLow ? "#fff7ed" : "#f0fdf4",
-                            }}
-                          >
-                            {isLow ? "⚠️" : "✅"}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="font-semibold text-gray-800 text-base"
+                  <div
+                    className="stock-scroll overflow-y-auto"
+                    style={{ maxHeight: "480px" }}
+                  >
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-white z-10">
+                        <tr className="border-b border-gray-100">
+                          {[
+                            "Item",
+                            "Unit",
+                            "Current Stock",
+                            "Min Trigger",
+                            "Status",
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="px-4 py-3 text-left text-xs uppercase tracking-widest text-gray-400 font-semibold"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {items.map((item) => {
+                          const isLow = item.stock <= item.minQty;
+                          return (
+                            <tr
+                              key={item.id}
+                              className="hover:bg-gray-50 transition-colors"
+                            >
+                              <td
+                                className="px-4 py-3 font-semibold text-gray-700"
                                 style={{
                                   fontFamily: "'Playfair Display',serif",
                                 }}
                               >
                                 {item.name}
-                              </span>
-                              {isLow && (
+                              </td>
+                              <td className="px-4 py-3 text-gray-500">
+                                {item.unit}
+                              </td>
+                              <td
+                                className="px-4 py-3 font-bold"
+                                style={{ color: isLow ? "#ea580c" : "#16a34a" }}
+                              >
+                                {item.stock} {item.unit}
+                              </td>
+                              <td className="px-4 py-3 text-gray-500">
+                                {item.minQty} {item.unit}
+                              </td>
+                              <td className="px-4 py-3">
                                 <span
-                                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                  className="text-xs font-bold px-2.5 py-1 rounded-full"
                                   style={{
-                                    background: "#fee2e2",
-                                    color: "#b91c1c",
+                                    background: isLow ? "#fee2e2" : "#dcfce7",
+                                    color: isLow ? "#b91c1c" : "#15803d",
                                   }}
                                 >
-                                  LOW
+                                  {isLow ? "⚠ Low" : "✓ OK"}
                                 </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: `${pct}%`,
-                                    background: isLow ? "#f97316" : "#22c55e",
-                                  }}
-                                />
-                              </div>
-                              <span className="text-xs text-gray-400 shrink-0">
-                                min {item.minQty} {item.unit}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p
-                              className={`text-2xl font-black ${isLow ? "text-orange-600" : "text-gray-800"}`}
-                              style={{ fontFamily: "'Playfair Display',serif" }}
-                            >
-                              {item.stock}
-                            </p>
-                            <p className="text-xs text-gray-400">{item.unit}</p>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TODAY'S LOG ── */}
-        {activeTab === "log" && (
-          <div style={{ animation: "fadeIn .4s ease" }}>
-            <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h2
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontWeight: 700,
-                    fontSize: "1.05rem",
-                  }}
-                >
-                  Today's Transactions
-                </h2>
-              </div>
-              {log.length === 0 ? (
-                <div className="py-20 text-center text-gray-400">
-                  <p className="text-4xl mb-3">📋</p>
-                  <p className="font-medium">No transactions yet today.</p>
-                  <p className="text-sm mt-1">
-                    Use "Stock In" or "Mark Used" to log activity.
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className="stock-scroll overflow-y-auto p-3 flex flex-col gap-2"
-                  style={{ maxHeight: "480px" }}
-                >
-                  {log.map((e) => (
-                    <LogRow key={e.id} entry={e} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── ITEMS ── */}
-        {activeTab === "items" && (
-          <div style={{ animation: "fadeIn .4s ease" }}>
-            <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
-              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
-                <h2
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontWeight: 700,
-                    fontSize: "1.05rem",
-                  }}
-                >
-                  All Items & Triggers
-                </h2>
-                <button
-                  onClick={() => {
-                    setAddItemModal(true);
-                    setFormErr("");
-                  }}
-                  className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors"
-                >
-                  + Add Item
-                </button>
-              </div>
-              <div
-                className="stock-scroll overflow-y-auto"
-                style={{ maxHeight: "480px" }}
-              >
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-gray-100">
-                      {[
-                        "Item",
-                        "Unit",
-                        "Current Stock",
-                        "Min Trigger",
-                        "Status",
-                      ].map((h) => (
-                        <th
-                          key={h}
-                          className="px-4 py-3 text-left text-xs uppercase tracking-widest text-gray-400 font-semibold"
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {items.map((item) => {
-                      const isLow = item.stock <= item.minQty;
-                      return (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td
-                            className="px-4 py-3 font-semibold text-gray-700"
-                            style={{ fontFamily: "'Playfair Display',serif" }}
-                          >
-                            {item.name}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">
-                            {item.unit}
-                          </td>
-                          <td
-                            className="px-4 py-3 font-bold"
-                            style={{ color: isLow ? "#ea580c" : "#16a34a" }}
-                          >
-                            {item.stock} {item.unit}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">
-                            {item.minQty} {item.unit}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className="text-xs font-bold px-2.5 py-1 rounded-full"
-                              style={{
-                                background: isLow ? "#fee2e2" : "#dcfce7",
-                                color: isLow ? "#b91c1c" : "#15803d",
-                              }}
-                            >
-                              {isLow ? "⚠ Low" : "✓ OK"}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
       </main>
 
-      {/* ── Stock In / Mark Used Modal ─────────────────────────────────────────── */}
+      {/* Stock In / Mark Used Modal */}
       {modal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -766,7 +834,7 @@ export default function InventoryManagement() {
         </div>
       )}
 
-      {/* ── Add Item Modal ─────────────────────────────────────────────────────── */}
+      {/* Add Item Modal */}
       {addItemModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -879,6 +947,7 @@ export default function InventoryManagement() {
           </div>
         </div>
       )}
+
       <div className="sticky bottom-0 bg-[#faf9f6] border-t border-gray-100 px-4 py-2">
         <BackButton to="/dashboard" />
       </div>

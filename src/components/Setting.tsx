@@ -690,39 +690,37 @@ export default function SettingsPage() {
         <Navbar variant="module" moduleName="Settings" />
       </div>
 
-      <div className="flex min-h-[calc(100vh-76px)]">
-    <aside className="w-56 shrink-0 bg-white border-r border-gray-100 shadow-sm hidden sm:flex flex-col pt-4 gap-1 px-2 sticky top-20 h-[calc(100vh-76px)]">
-  
-  {/* Sections */}
-  <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
-    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold px-3 mb-2">
-      Sections
-    </p>
-    {SECTIONS.map((s) => (
-      <button
-        key={s.key}
-        onClick={() => setActiveSection(s.key)}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
-          activeSection === s.key
-            ? "bg-emerald-50 text-emerald-700"
-            : "text-gray-600 hover:bg-gray-50"
-        }`}
-      >
-        <span className="text-base">{s.icon}</span>
-        {s.label}
-        {activeSection === s.key && (
-          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        )}
-      </button>
-    ))}
-  </div>
+      <div className="flex h-[calc(100vh-76px)]">
+        <aside className="w-56 shrink-0 bg-white border-r border-gray-100 shadow-sm hidden sm:flex flex-col pt-4 gap-1 px-2 sticky top-20 h-[calc(100vh-76px)]">
+          {/* Sections */}
+          <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
+            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold px-3 mb-2">
+              Sections
+            </p>
+            {SECTIONS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setActiveSection(s.key)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
+                  activeSection === s.key
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-base">{s.icon}</span>
+                {s.label}
+                {activeSection === s.key && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                )}
+              </button>
+            ))}
+          </div>
 
-  {/* Back button — pinned to bottom */}
-  <div className="border-t border-gray-100 px-2 py-4">
-    <BackButton />
-  </div>
-
-</aside>
+          {/* Back button — pinned to bottom */}
+          <div className="border-t border-gray-100 px-2 py-4">
+            <BackButton />
+          </div>
+        </aside>
 
         {/* ── Mobile tab bar ── */}
         <div className="sm:hidden w-full fixed bottom-0 left-0 z-40 bg-white border-t border-gray-100 flex">
@@ -742,7 +740,7 @@ export default function SettingsPage() {
 
         {/* ── Content area ── */}
         <main
-          className="flex-1 px-4 sm:px-8 py-6 pb-24 sm:pb-6 overflow-y-auto"
+          className="flex-1 px-4 sm:px-8 py-6 pb-24 sm:pb-6 overflow-y-auto h-full"
           style={{ animation: "fadeIn .3s ease" }}
         >
           <div
@@ -759,10 +757,9 @@ export default function SettingsPage() {
               <TableManagement onSave={showToast} />
             )}
           </div>
-           
         </main>
       </div>
-    
+
       {/* Toast */}
       {toast && <Toast message={toast} />}
     </div>

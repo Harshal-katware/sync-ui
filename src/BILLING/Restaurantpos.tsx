@@ -1,7 +1,8 @@
 import { useState, useMemo, type JSX } from "react";
-// import BackButton from "../components/BackButton";
+import BackButton from "../components/BackButton.js";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+
+// ── Types ────
 
 type Category = "veg" | "nonveg" | "drink";
 type Zone = "HALL" | "FAMILY" | "PARCEL";
@@ -645,7 +646,9 @@ export default function RestaurantPOS(): JSX.Element {
               <p className="text-xs">No tables in this zone</p>
             </div>
           )}
-          {/* <div className="mt-6"><BackButton to="/dashboard" /></div> */}
+          <div className="fixed bottom-0 p-3 sm:p-4">
+            <BackButton to="/dashboard" />
+            </div>
         </div>
       </div>
 
