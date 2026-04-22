@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import RestaurantPOS from './BILLING/Restaurantpos';
+import RestaurantPOS from "./BILLING/Restaurantpos";
 import Reports from "./Report/Reports";
-import ShiftSummary from "./Report/Subreport/ShiftSummary";
-import Menupage from './MENU/Menupage';
-import TopSellingProducts from "./Report/Subreport/TopSellingProducts";
+import DailyUpdate from "./Report/Subreport/DailyUpdate";
+import Menupage from "./MENU/Menupage";
+import InventoryManagement from "./Inventory/Inventorymanagement";
 import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
-import InventoryManagement from "./Inventory/Inventorymanagement";
-import SettingsPage from "./components/Settingspage";
+import TopProductsDashboard from "./Report/Subreport/TopSellingProducts";
+import SettingsPage from "./components/Setting";
 
 export default function App() {
   return (
@@ -17,18 +18,23 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<InventoryManagement/>} />
+        <Route path="/inventory" element={<InventoryManagement />} />
         <Route path="/billing" element={<RestaurantPOS />} />
         <Route path="/menu" element={<Menupage />} />
-        <Route path="/reports" element={<Reports/>} />
-
-        {/*Report Routes */}
-        <Route path="/reports/daily-report" element={<ShiftSummary />} /> 
-        <Route path="/reports/top-selling-products" element={<TopSellingProducts />} />
-        <Route path="/reports/customization" element={<Customization />} />
-        <Route path="/reports/monthly-report" element={<MonthlyReport />} /> 
-        
         <Route path="/settings" element={<SettingsPage />} />
+
+        {/* REPORTS */}
+        <Route path="/reports" element={<Reports />}>
+          <Route index element={<DailyUpdate />} />
+
+          <Route path="daily-report" element={<DailyUpdate />} />
+          <Route
+            path="top-selling-products"
+            element={<TopProductsDashboard />}
+          />
+          <Route path="customization" element={<Customization />} />
+          <Route path="monthly-report" element={<MonthlyReport />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
