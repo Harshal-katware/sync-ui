@@ -1,7 +1,12 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import jsPDF from "jspdf";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 
 interface Product {
@@ -13,7 +18,6 @@ interface Product {
 type SortOrder = "high" | "low";
 
 export default function TopSellingProducts(): JSX.Element {
-
   const [search, setSearch] = useState<string>("");
   const [sort, setSort] = useState<SortOrder>("high");
 
@@ -185,7 +189,6 @@ export default function TopSellingProducts(): JSX.Element {
           </div>
         </>
       )}
-
     </div>
   );
 }

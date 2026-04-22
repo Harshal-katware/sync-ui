@@ -1,7 +1,15 @@
 import jsPDF from "jspdf";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
 interface TopItem {
@@ -31,7 +39,6 @@ interface PieEntry {
 }
 
 export default function MonthlyReport(): React.ReactNode {
-
   const today: Date = new Date();
 
   const monthName: string = today.toLocaleString("default", {
@@ -65,7 +72,7 @@ export default function MonthlyReport(): React.ReactNode {
     ([key, value]: [string, number]) => ({
       name: key,
       value: value,
-    })
+    }),
   );
 
   const COLORS: string[] = ["#7c3aed", "#ec4899", "#22c55e"];
@@ -82,7 +89,6 @@ export default function MonthlyReport(): React.ReactNode {
 
   return (
     <div className="space-y-6">
-
       {/* Title */}
       <div>
         <h1 className="text-2xl font-serif text-gray-800">Monthly Report</h1>
@@ -124,7 +130,6 @@ export default function MonthlyReport(): React.ReactNode {
 
       {/* Chart Section */}
       <div className="grid grid-cols-2 gap-6">
-
         {/* Bar Chart */}
         <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
           <p className="mb-3 font-semibold">Top Products</p>
@@ -151,14 +156,16 @@ export default function MonthlyReport(): React.ReactNode {
                 label
               >
                 {pieData.map((entry: PieEntry, index: number) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length] ?? "#cccccc"} />
-               ))}
+                  <Cell
+                    key={index}
+                    fill={COLORS[index % COLORS.length] ?? "#cccccc"}
+                  />
+                ))}
               </Pie>
               <Legend />
             </PieChart>
           </ResponsiveContainer>
         </div>
-
       </div>
 
       {/* Top Products List */}
@@ -179,7 +186,6 @@ export default function MonthlyReport(): React.ReactNode {
       >
         📄 Download Report
       </button>
-
     </div>
   );
 }

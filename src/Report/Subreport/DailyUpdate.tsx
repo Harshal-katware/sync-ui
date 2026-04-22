@@ -1,10 +1,14 @@
 import jsPDF from "jspdf";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 
 export default function DailyUpdate() {
-
   const today = new Date().toLocaleDateString();
 
   const data = {
@@ -31,7 +35,7 @@ export default function DailyUpdate() {
     { time: "9PM", sales: 12000 },
   ];
 
-  const topProduct = [...products].sort((a,b)=>b.qty-a.qty)[0]?.name;
+  const topProduct = [...products].sort((a, b) => b.qty - a.qty)[0]?.name;
 
   const downloadPDF = () => {
     const doc = new jsPDF();
@@ -85,7 +89,6 @@ export default function DailyUpdate() {
             +12% today
           </span>
         </div>
-
       </div>
 
       {/*  Orders */}
@@ -157,7 +160,6 @@ export default function DailyUpdate() {
         </div>
 
       </div>
-
     </div>
   );
 }

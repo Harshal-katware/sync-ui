@@ -1,35 +1,34 @@
-
 import { useState } from "react";
 import Navbar from "../components/Navbar.js";
 import BackButton from "../components/BackButton.js";
 
 type Category = "Veg" | "Non-Veg";
 type FilterOption = "All" | Category;
- 
+
 interface MenuItem {
   id: number;
   name: string;
   price: number;
   category: Category;
 }
- 
+
 interface MenuForm {
   name: string;
   price: string;
   category: Category;
 }
- 
+
 // ─── Initial data ──────────────────────────────────────────────────────────────
 const initialItems: MenuItem[] = [
-  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg"     },
-  { id: 2, name: "Chicken Biryani",      price: 280, category: "Non-Veg" },
-  { id: 3, name: "Dal Tadka",            price: 150, category: "Veg"     },
-  { id: 4, name: "Mutton Rogan Josh",    price: 380, category: "Non-Veg" },
-  { id: 5, name: "Veg Thali",            price: 200, category: "Veg"     },
+  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg" },
+  { id: 2, name: "Chicken Biryani", price: 280, category: "Non-Veg" },
+  { id: 3, name: "Dal Tadka", price: 150, category: "Veg" },
+  { id: 4, name: "Mutton Rogan Josh", price: 380, category: "Non-Veg" },
+  { id: 5, name: "Veg Thali", price: 200, category: "Veg" },
 ];
- 
+
 const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
- 
+
 // ─── Badges ────────────────────────────────────────────────────────────────────
 const VegBadge = () => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#edf7f0] text-[#1e7a3e] border border-[#a8d8b8]">
@@ -37,139 +36,189 @@ const VegBadge = () => (
     Veg
   </span>
 );
- 
+
 const NonVegBadge = () => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#fdf0ef] text-[#c0392b] border border-[#f5b5b0]">
     <span className="w-1.5 h-1.5 rounded-full bg-[#e74c3c]" />
     Non-Veg
   </span>
 );
- 
+
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function MenuPage() {
-  const [items, setItems]       = useState<MenuItem[]>(initialItems);
-  const [search, setSearch]     = useState<string>("");
-  const [filter, setFilter]     = useState<FilterOption>("All");
+  const [items, setItems] = useState<MenuItem[]>(initialItems);
+  const [search, setSearch] = useState<string>("");
+  const [filter, setFilter] = useState<FilterOption>("All");
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [editId, setEditId]     = useState<number | null>(null);
-  const [form, setForm]         = useState<MenuForm>(defaultForm);
-  const [nextId, setNextId]     = useState<number>(6);
- 
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState<MenuForm>(defaultForm);
+  const [nextId, setNextId] = useState<number>(6);
+
   const matchesSearch = (name: string, query: string): boolean => {
     if (!query) return true;
-    const q     = query.toLowerCase();
+    const q = query.toLowerCase();
     const lower = name.toLowerCase();
     if (lower.includes(q)) return true;
-    
-   const initials = name
-  .split(" ")
-  .map((w) => w.charAt(0).toLowerCase())
-  .join("");
+
+    const initials = name
+      .split(" ")
+      .map((w) => w.charAt(0).toLowerCase())
+      .join("");
     return initials.includes(q);
   };
- 
+
   const filtered = items.filter(
     (i) =>
       matchesSearch(i.name, search) &&
-      (filter === "All" || i.category === filter)
+      (filter === "All" || i.category === filter),
   );
- 
-  const vegCount    = items.filter((i) => i.category === "Veg").length;
+
+  const vegCount = items.filter((i) => i.category === "Veg").length;
   const nonVegCount = items.filter((i) => i.category === "Non-Veg").length;
- 
+
   const openAdd = (): void => {
     setEditId(null);
     setForm(defaultForm);
     setShowModal(true);
   };
- 
+
   const openEdit = (item: MenuItem): void => {
     setEditId(item.id);
-    setForm({ name: item.name, price: String(item.price), category: item.category });
+    setForm({
+      name: item.name,
+      price: String(item.price),
+      category: item.category,
+    });
     setShowModal(true);
   };
- 
+
   const closeModal = (): void => {
     setShowModal(false);
     setEditId(null);
     setForm(defaultForm);
   };
- 
+
   const handleSave = (): void => {
-    const trimmedName  = form.name.trim();
-    const parsedPrice  = parseInt(form.price);
+    const trimmedName = form.name.trim();
+    const parsedPrice = parseInt(form.price);
     if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
- 
+
     if (editId !== null) {
       setItems((prev) =>
         prev.map((i) =>
           i.id === editId
-            ? { ...i, name: trimmedName, price: parsedPrice, category: form.category }
-            : i
-        )
+            ? {
+                ...i,
+                name: trimmedName,
+                price: parsedPrice,
+                category: form.category,
+              }
+            : i,
+        ),
       );
     } else {
       setItems((prev) => [
         ...prev,
-        { id: nextId, name: trimmedName, price: parsedPrice, category: form.category },
+        {
+          id: nextId,
+          name: trimmedName,
+          price: parsedPrice,
+          category: form.category,
+        },
       ]);
       setNextId((n) => n + 1);
     }
     closeModal();
   };
- 
+
   const handleDelete = (id: number): void =>
     setItems((prev) => prev.filter((i) => i.id !== id));
- 
+
   // Field config for the modal form
-  const modalFields: { label: string; key: keyof Pick<MenuForm, "name" | "price">; type: string; placeholder: string }[] = [
-    { label: "Item Name", key: "name",  type: "text",   placeholder: "e.g. Paneer Tikka" },
-    { label: "Price (₹)", key: "price", type: "number", placeholder: "e.g. 250"          },
+  const modalFields: {
+    label: string;
+    key: keyof Pick<MenuForm, "name" | "price">;
+    type: string;
+    placeholder: string;
+  }[] = [
+    {
+      label: "Item Name",
+      key: "name",
+      type: "text",
+      placeholder: "e.g. Paneer Tikka",
+    },
+    {
+      label: "Price (₹)",
+      key: "price",
+      type: "number",
+      placeholder: "e.g. 250",
+    },
   ];
- 
+
   return (
     <div className="min-h-screen bg-gray-100 font-sans pb-20">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap%27);`}</style>
- 
+
       <Navbar variant="module" moduleName="Menu Manager" />
-      
-      
- 
+
       <div className="px-4 sm:px-6 lg:px-8">
- 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 mb-5">
           {(
             [
-              { label: "Total Items", value: items.length, gold: true  },
-              { label: "Veg",         value: vegCount,     gold: false },
-              { label: "Non-Veg",     value: nonVegCount,  gold: false },
+              { label: "Total Items", value: items.length, gold: true },
+              { label: "Veg", value: vegCount, gold: false },
+              { label: "Non-Veg", value: nonVegCount, gold: false },
             ] as { label: string; value: number; gold: boolean }[]
           ).map((s) => (
-            <div key={s.label} className="bg-white border border-[#e2d9c9] rounded-xl px-3 sm:px-5 py-3 sm:py-4">
+            <div
+              key={s.label}
+              className="bg-white border border-[#e2d9c9] rounded-xl px-3 sm:px-5 py-3 sm:py-4"
+            >
               <p className="text-[9px] sm:text-[11px] text-[#9b8e75] uppercase tracking-[1.5px] mb-1 truncate">
                 {s.label}
               </p>
-              <p className={`text-xl sm:text-2xl font-medium ${s.gold ? "text-[#c9a84c]" : "text-[#1a1200]"}`}>
+              <p
+                className={`text-xl sm:text-2xl font-medium ${s.gold ? "text-[#c9a84c]" : "text-[#1a1200]"}`}
+              >
                 {s.value}
               </p>
             </div>
           ))}
         </div>
- 
+
         {/* Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-3">
           <div className="relative w-full sm:max-w-xs">
             <input
               type="text"
               value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearch(e.target.value)
+              }
               placeholder="Search menu items..."
               className="w-full bg-white border border-[#e2d9c9] rounded-lg pl-9 pr-3 py-2 text-[13px] text-[#1a1200] placeholder-[#c5b99e] outline-none focus:border-[#c9a84c] transition-colors"
             />
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40" width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="#9ca3af" strokeWidth="1.3" />
-              <path d="M10.5 10.5l3 3" stroke="#9ca3af" strokeWidth="1.3" strokeLinecap="round" />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 opacity-40"
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <circle
+                cx="6.5"
+                cy="6.5"
+                r="4.5"
+                stroke="#9ca3af"
+                strokeWidth="1.3"
+              />
+              <path
+                d="M10.5 10.5l3 3"
+                stroke="#9ca3af"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
           <div className="flex gap-2">
@@ -194,35 +243,47 @@ export default function MenuPage() {
             </button>
           </div>
         </div>
- 
+
         {/* ── DESKTOP: Table (md and up) ── */}
         <div className="hidden md:block bg-white border border-[#e2d9c9] rounded-2xl overflow-hidden">
           <div className="max-h-105 overflow-y-auto">
             <table className="w-full text-[13.5px]">
               <thead className="bg-[#faf7f0] sticky top-0 z-10">
                 <tr>
-                  {["#", "Item Name", "Price", "Category", "Actions"].map((h) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3.5 text-left text-[10.5px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {["#", "Item Name", "Price", "Category", "Actions"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3.5 text-left text-[10.5px] font-medium text-[#b8ac9a] uppercase tracking-[1.8px] whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-[#b8ac9a] text-[14px]">
+                    <td
+                      colSpan={5}
+                      className="text-center py-12 text-[#b8ac9a] text-[14px]"
+                    >
                       No items found.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((item, idx) => (
-                    <tr key={item.id} className="border-t border-[#f0ebe0] hover:bg-[#faf7f0] transition-colors">
-                      <td className="px-5 py-3.5 text-[#c5b99e] text-[12px]">{idx + 1}</td>
-                      <td className="px-5 py-3.5 font-medium text-[#1a1200]">{item.name}</td>
+                    <tr
+                      key={item.id}
+                      className="border-t border-[#f0ebe0] hover:bg-[#faf7f0] transition-colors"
+                    >
+                      <td className="px-5 py-3.5 text-[#c5b99e] text-[12px]">
+                        {idx + 1}
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-[#1a1200]">
+                        {item.name}
+                      </td>
                       <td
                         className="px-5 py-3.5 text-[#c9a84c] text-[15px] font-medium"
                         style={{ fontFamily: "'Playfair Display', serif" }}
@@ -230,7 +291,11 @@ export default function MenuPage() {
                         ₹{item.price}
                       </td>
                       <td className="px-5 py-3.5">
-                        {item.category === "Veg" ? <VegBadge /> : <NonVegBadge />}
+                        {item.category === "Veg" ? (
+                          <VegBadge />
+                        ) : (
+                          <NonVegBadge />
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex gap-2">
@@ -255,7 +320,7 @@ export default function MenuPage() {
             </table>
           </div>
         </div>
- 
+
         {/* ── MOBILE: Card list (below md) ── */}
         <div className="md:hidden space-y-2">
           {filtered.length === 0 ? (
@@ -264,12 +329,19 @@ export default function MenuPage() {
             </div>
           ) : (
             filtered.map((item, idx) => (
-              <div key={item.id} className="bg-white border border-[#e2d9c9] rounded-xl px-4 py-3.5">
+              <div
+                key={item.id}
+                className="bg-white border border-[#e2d9c9] rounded-xl px-4 py-3.5"
+              >
                 {/* Top row: index + name + badge */}
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[11px] text-[#c5b99e] shrink-0">#{idx + 1}</span>
-                    <span className="font-medium text-[14px] text-[#1a1200] truncate">{item.name}</span>
+                    <span className="text-[11px] text-[#c5b99e] shrink-0">
+                      #{idx + 1}
+                    </span>
+                    <span className="font-medium text-[14px] text-[#1a1200] truncate">
+                      {item.name}
+                    </span>
                   </div>
                   {item.category === "Veg" ? <VegBadge /> : <NonVegBadge />}
                 </div>
@@ -301,13 +373,12 @@ export default function MenuPage() {
           )}
         </div>
       </div>
- 
+
       {/* Back button */}
       <div className="fixed bottom-0 left-0 p-3 sm:p-4">
         <BackButton to="/dashboard" />
-        
       </div>
- 
+
       {/* Modal */}
       {showModal && (
         <div
@@ -331,7 +402,7 @@ export default function MenuPage() {
                 ×
               </button>
             </div>
- 
+
             {modalFields.map((field) => (
               <div key={field.key} className="mb-3.5">
                 <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">
@@ -349,7 +420,7 @@ export default function MenuPage() {
                 />
               </div>
             ))}
- 
+
             <div className="mb-5">
               <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">
                 Category
@@ -365,7 +436,7 @@ export default function MenuPage() {
                 <option value="Non-Veg">Non-Veg</option>
               </select>
             </div>
- 
+
             <div className="flex justify-end gap-2 sm:gap-3">
               <button
                 onClick={closeModal}

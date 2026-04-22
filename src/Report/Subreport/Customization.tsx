@@ -19,15 +19,27 @@ export default function Customization() {
 
   const data: DataItem[] = [
     { name: "Pizza", qty: 50, revenue: 10000, payment: "UPI", type: "dine-in" },
-    { name: "Burger", qty: 30, revenue: 6000, payment: "Cash", type: "takeaway" },
+    {
+      name: "Burger",
+      qty: 30,
+      revenue: 6000,
+      payment: "Cash",
+      type: "takeaway",
+    },
     { name: "Pasta", qty: 20, revenue: 4000, payment: "Card", type: "online" },
-    { name: "Sandwich", qty: 25, revenue: 5000, payment: "UPI", type: "dine-in" },
+    {
+      name: "Sandwich",
+      qty: 25,
+      revenue: 5000,
+      payment: "UPI",
+      type: "dine-in",
+    },
   ];
 
   const filtered = data.filter(
     (item) =>
       (payment === "all" || item.payment === payment) &&
-      (orderType === "all" || item.type === orderType)
+      (orderType === "all" || item.type === orderType),
   );
 
   const totalSales = filtered.reduce((acc, i) => acc + i.revenue, 0);
@@ -178,9 +190,7 @@ export default function Customization() {
                       >
                         <td className="p-3">{item.name}</td>
                         <td className="p-3">{item.qty}</td>
-                        <td className="p-3 text-green-600">
-                          ₹{item.revenue}
-                        </td>
+                        <td className="p-3 text-green-600">₹{item.revenue}</td>
                         <td className="p-3">{item.payment}</td>
                         <td className="p-3 capitalize">{item.type}</td>
                       </tr>

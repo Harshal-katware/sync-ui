@@ -1,7 +1,7 @@
-import { useNavigate } from "react-router-dom";     
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar.js";
 import type { JSX } from "react";
 import restroImage from "../assets/restro4.jpg";
-import Navbar from "../components/Navbar";
 
 interface NavCard {
   title: string;
@@ -14,15 +14,19 @@ export default function Dashboard(): JSX.Element {
   const navigate = useNavigate();
 
   const navCards: NavCard[] = [
-    { title: "Billing",   desc: "Manage orders easily", icon: "🧾", path: "/billing"   },
-    { title: "Menu",      desc: "Update food items",    icon: "🍽️", path: "/menu"      },
-    { title: "Inventory", desc: "Track stock",          icon: "📦", path: "/inventory" },
-    { title: "Reports",   desc: "View analytics",       icon: "📊", path: "/reports"   },
+    {
+      title: "Billing",
+      desc: "Manage orders easily",
+      icon: "🧾",
+      path: "/billing",
+    },
+    { title: "Menu", desc: "Update food items", icon: "🍽️", path: "/menu" },
+    { title: "Inventory", desc: "Track stock", icon: "📦", path: "/inventory" },
+    { title: "Reports", desc: "View analytics", icon: "📊", path: "/reports" },
   ];
 
   return (
     <div className="min-h-screen relative">
-
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -34,18 +38,17 @@ export default function Dashboard(): JSX.Element {
 
       {/* Content */}
       <div className="relative z-10">
-
-        <Navbar
-          variant="dashboard"
-          appName="Sync Restaurant"
-          onSettingsClick={() => navigate("/settings")}
-          onProfileClick={() => navigate("/profile")}
-        />
-        
+        <div className="relative z-50">
+          <Navbar
+            variant="dashboard"
+            appName="Sync Restaurant"
+            onSettingsClick={() => navigate("/settings")}
+            onProfileClick={() => navigate("/profile")}
+          />
+        </div>
 
         {/* Main Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
-
           {/* Heading */}
           <div className="mb-6 sm:mb-8 text-white text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold">Welcome 👋</h1>
@@ -79,7 +82,6 @@ export default function Dashboard(): JSX.Element {
               </div>
             ))}
           </div>
-
         </div>
       </div>
     </div>
