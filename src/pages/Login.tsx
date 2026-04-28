@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
-import bg from "src/assets/restro4.jpg";
-import logo from "../assets/logo.png";
+import bg from "../assets/restro4.jpg";
+import logo from "../assets/chef2.jpg";
 import { Eye, EyeOff } from "lucide-react";
 
 interface FormState {
@@ -117,7 +117,6 @@ export default function AuthPage(): JSX.Element {
       <div className="absolute inset-0 bg-black/60"></div>
 
       <div className="relative z-10 w-full max-w-md p-8 text-white text-center">
-
         {/* Logo */}
         <div className="mb-4">
           <div className="w-20 h-20 mx-auto rounded-full bg-white/20 flex items-center justify-center">
@@ -134,7 +133,6 @@ export default function AuthPage(): JSX.Element {
         </h1>
 
         <div className="space-y-4 text-left">
-
           {/* Name */}
           {!isLogin && (
             <div>

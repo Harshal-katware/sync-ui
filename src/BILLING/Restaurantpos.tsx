@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, type JSX } from "react";
+import BackButton from "../components/BackButton";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+
+// ── Types ────
 
 type Category    = "veg" | "nonveg" | "drink";
 type Zone        = "HALL" | "FAMILY" | "PARCEL";
@@ -717,6 +719,9 @@ export default function RestaurantPOS(): JSX.Element {
               )}
             </>
           )}
+          <div className="fixed bottom-0 p-3 sm:p-4">
+            <BackButton to="/dashboard" />
+            </div>
         </div>
       </div>
 
