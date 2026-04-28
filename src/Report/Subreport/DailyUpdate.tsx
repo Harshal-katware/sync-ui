@@ -58,7 +58,7 @@ export default function DailyUpdate() {
 
         <button
           onClick={downloadPDF}
-          className="w-full sm:w-auto px-4 py-2 bg-linear-to-r from-emerald-500 to-green-500 text-white rounded-lg shadow hover:scale-105 transition"
+          className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg shadow hover:scale-105 transition"
         >
           Export
         </button>
@@ -82,7 +82,7 @@ export default function DailyUpdate() {
           <h2 className="text-lg sm:text-xl font-bold text-red-500">₹{data.refund}</h2>
         </div>
 
-        <div className="bg-linear-to-r from-green-500 to-emerald-500 text-white p-4 sm:p-5 rounded-xl shadow">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4 sm:p-5 rounded-xl shadow">
           <p className="text-sm">Net Sales</p>
           <h2 className="text-lg sm:text-xl font-bold">₹{net}</h2>
           <span className="text-xs bg-white/20 px-2 py-1 rounded mt-2 inline-block">

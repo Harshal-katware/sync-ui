@@ -41,9 +41,6 @@ export default function Dashboard(): JSX.Element {
         <div className="relative z-50">
           <Navbar
             variant="dashboard"
-            appName="Sync Restaurant"
-            onSettingsClick={() => navigate("/settings")}
-            onProfileClick={() => navigate("/profile")}
           />
         </div>
 
