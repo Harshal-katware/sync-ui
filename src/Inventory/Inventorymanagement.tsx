@@ -24,6 +24,56 @@ type LogEntry = {
 
 type ModalType = { type: "IN" | "OUT" } | null;
 
+type ToastItem = {
+  id: number;
+  message: string;
+  type: "success" | "error";
+};
+
+// ─── Toast Notification ───────────────────────────────────────────────
+function Toast({
+  toasts,
+  onRemove,
+}: {
+  toasts: ToastItem[];
+  onRemove: (id: number) => void;
+}) {
+  if (!toasts.length) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 shadow-2xl border pointer-events-auto"
+          style={{
+            background:
+              t.type === "success"
+                ? "linear-gradient(135deg,#f0fdf4 0%,#fff 100%)"
+                : "linear-gradient(135deg,#fff7ed 0%,#fff 100%)",
+            borderColor: t.type === "success" ? "#86efac" : "#fb923c",
+            animation: "slideUp .35s cubic-bezier(.22,1,.36,1)",
+            minWidth: "260px",
+          }}
+        >
+          <span className="text-xl">{t.type === "success" ? "✅" : "⚠️"}</span>
+          <p
+            className="flex-1 text-sm font-semibold"
+            style={{ color: t.type === "success" ? "#15803d" : "#c2410c" }}
+          >
+            {t.message}
+          </p>
+          <button
+            onClick={() => onRemove(t.id)}
+            className="text-gray-400 hover:text-gray-600 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Low Stock Alert ─────────────────────────────────────────────────
 function LowStockAlert({
   alerts,
@@ -171,6 +221,17 @@ export default function InventoryManagement() {
   });
   const [formErr, setFormErr] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  // ── Toast helper ──────────────────────────────────────────────────
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success"
+  ) => {
+    const id = Date.now();
+    setToasts((p) => [...p, { id, message, type }]);
+    setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3000);
+  };
 
   // ── Fetch all items from backend ──
   const fetchItems = useCallback(async () => {
@@ -193,7 +254,7 @@ export default function InventoryManagement() {
 
   useEffect(() => {
     setAlerts(
-      items.filter((i) => i.stock <= i.minQty && !dismissedIds.has(i.id)),
+      items.filter((i) => i.stock <= i.minQty && !dismissedIds.has(i.id))
     );
   }, [items, dismissedIds]);
 
@@ -235,7 +296,6 @@ export default function InventoryManagement() {
 
       const updated: Item = await res.json();
 
-      // Update item in local state with fresh data from backend
       setItems((p) => p.map((i) => (i.id === updated.id ? updated : i)));
 
       setLog((p) => [
@@ -257,6 +317,13 @@ export default function InventoryManagement() {
           return n;
         });
       }
+
+      // ── Show success toast ──
+      showToast(
+        modal?.type === "IN"
+          ? `${item.name} stocked in — +${qty} ${item.unit}`
+          : `${item.name} marked as used — −${qty} ${item.unit}`
+      );
 
       setModal(null);
       setForm({ itemId: "", qty: "" });
@@ -291,6 +358,10 @@ export default function InventoryManagement() {
 
       const created: Item = await res.json();
       setItems((p) => [...p, created]);
+
+      // ── Show success toast ──
+      showToast(`"${created.name}" added to inventory`);
+
       setAddItemModal(false);
       setNewItem({ name: "", unit: "kg", stock: "0", minQty: "" });
     } catch {
@@ -299,7 +370,7 @@ export default function InventoryManagement() {
   };
 
   const filteredItems = items.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase()),
+    i.name.toLowerCase().includes(search.toLowerCase())
   );
   const lowCount = items.filter((i) => i.stock <= i.minQty).length;
   const todayIn = log
@@ -318,8 +389,9 @@ export default function InventoryManagement() {
       style={{ background: "#faf9f6", fontFamily: "'DM Sans',sans-serif" }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap%27);
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
         @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideUp   { from{opacity:0;transform:translateY(18px)}  to{opacity:1;transform:translateY(0)} }
         @keyframes fadeIn    { from{opacity:0;transform:scale(.97)}        to{opacity:1;transform:scale(1)}    }
         @keyframes spin      { to { transform: rotate(360deg); } }
         .card-hover { transition:box-shadow .2s,transform .2s; }
@@ -332,6 +404,10 @@ export default function InventoryManagement() {
       `}</style>
 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
+      <Toast
+        toasts={toasts}
+        onRemove={(id) => setToasts((p) => p.filter((t) => t.id !== id))}
+      />
       <Navbar variant="module" moduleName="Inventory " />
 
       {/* TAB BAR */}
@@ -375,7 +451,6 @@ export default function InventoryManagement() {
 
       {/* MAIN CONTENT */}
       <main className="w-full px-4 sm:px-6 py-4 flex-1 overflow-hidden">
-        {/* Loading state */}
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="spinner" />
@@ -536,7 +611,7 @@ export default function InventoryManagement() {
                         filteredItems.map((item) => {
                           const pct = Math.min(
                             (item.stock / (item.minQty * 4)) * 100,
-                            100,
+                            100
                           );
                           const isLow = item.stock <= item.minQty;
                           return (
@@ -888,11 +963,13 @@ export default function InventoryManagement() {
                       setNewItem({ ...newItem, unit: e.target.value })
                     }
                   >
-                    {["kg", "g", "L", "ml", "pcs", "dozen", "pack"].map((u) => (
-                      <option key={u} value={u}>
-                        {u}
-                      </option>
-                    ))}
+                    {["kg", "g", "L", "ml", "pcs", "dozen", "pack"].map(
+                      (u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
                 <div>
