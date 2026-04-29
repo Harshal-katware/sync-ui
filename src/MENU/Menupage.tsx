@@ -1,34 +1,30 @@
 import { useState } from "react";
+import { useEffect } from "react";
+import { getAllMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from "../Api/menuApi";
 import Navbar from "../components/Navbar.js";
 import BackButton from "../components/BackButton.js";
-
+ 
 type Category = "Veg" | "Non-Veg";
 type FilterOption = "All" | Category;
-
+ 
 interface MenuItem {
   id: number;
   name: string;
   price: number;
   category: Category;
 }
-
+ 
 interface MenuForm {
   name: string;
   price: string;
   category: Category;
 }
-
+ 
 // ─── Initial data ──────────────────────────────────────────────────────────────
-const initialItems: MenuItem[] = [
-  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg" },
-  { id: 2, name: "Chicken Biryani", price: 280, category: "Non-Veg" },
-  { id: 3, name: "Dal Tadka", price: 150, category: "Veg" },
-  { id: 4, name: "Mutton Rogan Josh", price: 380, category: "Non-Veg" },
-  { id: 5, name: "Veg Thali", price: 200, category: "Veg" },
-];
-
+ 
+ 
 const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
-
+ 
 // ─── Badges ────────────────────────────────────────────────────────────────────
 const VegBadge = () => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#edf7f0] text-[#1e7a3e] border border-[#a8d8b8]">
@@ -36,52 +32,55 @@ const VegBadge = () => (
     Veg
   </span>
 );
-
+ 
 const NonVegBadge = () => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#fdf0ef] text-[#c0392b] border border-[#f5b5b0]">
     <span className="w-1.5 h-1.5 rounded-full bg-[#e74c3c]" />
     Non-Veg
   </span>
 );
-
+ 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function MenuPage() {
-  const [items, setItems] = useState<MenuItem[]>(initialItems);
+  const [items, setItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState<string>("");
   const [filter, setFilter] = useState<FilterOption>("All");
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<MenuForm>(defaultForm);
-  const [nextId, setNextId] = useState<number>(6);
-
+ 
+  useEffect(() => {
+    getAllMenuItems().then(setItems);
+}, []);
+ 
   const matchesSearch = (name: string, query: string): boolean => {
     if (!query) return true;
     const q = query.toLowerCase();
     const lower = name.toLowerCase();
     if (lower.includes(q)) return true;
-
+ 
     const initials = name
       .split(" ")
       .map((w) => w.charAt(0).toLowerCase())
       .join("");
     return initials.includes(q);
   };
-
+ 
   const filtered = items.filter(
     (i) =>
       matchesSearch(i.name, search) &&
       (filter === "All" || i.category === filter),
   );
-
+ 
   const vegCount = items.filter((i) => i.category === "Veg").length;
   const nonVegCount = items.filter((i) => i.category === "Non-Veg").length;
-
+ 
   const openAdd = (): void => {
     setEditId(null);
     setForm(defaultForm);
     setShowModal(true);
   };
-
+ 
   const openEdit = (item: MenuItem): void => {
     setEditId(item.id);
     setForm({
@@ -91,49 +90,41 @@ export default function MenuPage() {
     });
     setShowModal(true);
   };
-
+ 
   const closeModal = (): void => {
     setShowModal(false);
     setEditId(null);
     setForm(defaultForm);
   };
-
-  const handleSave = (): void => {
+ 
+const handleSave = async (): Promise<void> => {
     const trimmedName = form.name.trim();
     const parsedPrice = parseInt(form.price);
     if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
-
+ 
     if (editId !== null) {
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === editId
-            ? {
-                ...i,
-                name: trimmedName,
-                price: parsedPrice,
-                category: form.category,
-              }
-            : i,
-        ),
-      );
+        const updated = await updateMenuItem(editId, {
+            name: trimmedName,
+            price: parsedPrice,
+            category: form.category,
+        });
+        setItems((prev) => prev.map((i) => i.id === editId ? updated : i));
     } else {
-      setItems((prev) => [
-        ...prev,
-        {
-          id: nextId,
-          name: trimmedName,
-          price: parsedPrice,
-          category: form.category,
-        },
-      ]);
-      setNextId((n) => n + 1);
+        const newItem = await addMenuItem({
+            name: trimmedName,
+            price: parsedPrice,
+            category: form.category,
+        });
+        setItems((prev) => [...prev, newItem]);
     }
     closeModal();
-  };
-
-  const handleDelete = (id: number): void =>
+};
+ 
+  const handleDelete = async (id: number): Promise<void> => {
+    await deleteMenuItem(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
-
+};
+ 
   // Field config for the modal form
   const modalFields: {
     label: string;
@@ -154,13 +145,13 @@ export default function MenuPage() {
       placeholder: "e.g. 250",
     },
   ];
-
+ 
   return (
     <div className="min-h-screen bg-gray-100 font-sans pb-20">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap%27);`}</style>
-
+ 
       <Navbar variant="module" moduleName="Menu Manager" />
-
+ 
       <div className="px-4 sm:px-6 lg:px-8">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-6 mb-5">
@@ -186,7 +177,7 @@ export default function MenuPage() {
             </div>
           ))}
         </div>
-
+ 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-3">
           <div className="relative w-full sm:max-w-xs">
@@ -243,7 +234,7 @@ export default function MenuPage() {
             </button>
           </div>
         </div>
-
+ 
         {/* ── DESKTOP: Table (md and up) ── */}
         <div className="hidden md:block bg-white border border-[#e2d9c9] rounded-2xl overflow-hidden">
           <div className="max-h-105 overflow-y-auto">
@@ -320,7 +311,7 @@ export default function MenuPage() {
             </table>
           </div>
         </div>
-
+ 
         {/* ── MOBILE: Card list (below md) ── */}
         <div className="md:hidden space-y-2">
           {filtered.length === 0 ? (
@@ -373,12 +364,12 @@ export default function MenuPage() {
           )}
         </div>
       </div>
-
+ 
       {/* Back button */}
       <div className="fixed bottom-0 left-0 p-3 sm:p-4">
         <BackButton to="/dashboard" />
       </div>
-
+ 
       {/* Modal */}
       {showModal && (
         <div
@@ -402,7 +393,7 @@ export default function MenuPage() {
                 ×
               </button>
             </div>
-
+ 
             {modalFields.map((field) => (
               <div key={field.key} className="mb-3.5">
                 <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">
@@ -420,7 +411,7 @@ export default function MenuPage() {
                 />
               </div>
             ))}
-
+ 
             <div className="mb-5">
               <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">
                 Category
@@ -436,7 +427,7 @@ export default function MenuPage() {
                 <option value="Non-Veg">Non-Veg</option>
               </select>
             </div>
-
+ 
             <div className="flex justify-end gap-2 sm:gap-3">
               <button
                 onClick={closeModal}
@@ -457,3 +448,5 @@ export default function MenuPage() {
     </div>
   );
 }
+ 
+ 
