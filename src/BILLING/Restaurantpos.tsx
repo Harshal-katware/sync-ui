@@ -7,14 +7,14 @@ import BackButton from "../components/BackButton";
 type Category    = "veg" | "nonveg" | "drink";
 type Zone        = "HALL" | "FAMILY" | "PARCEL";
 type PaymentMode = "CASH" | "CARD" | "UPI" | "ONLINE";
-type ModalType   = "addTable" | "addMenu" | "editMenu" | null;
+type ModalType   = "addTable" | "editMenu" | null;   // ✅ "addMenu" removed
 type MobileView  = "left" | "right";
 
 interface MenuItem {
   id:       number;
   name:     string;
   price:    number;
-  category: Category;   // backend field name
+  category: Category;
   emoji:    string;
 }
 
@@ -61,7 +61,7 @@ interface ZoneButton {
 
 const API = "http://localhost:8080/api";
 
-// ── Static UI Data (Zone buttons only — no menu/table dummy data) ──────────────
+// ── Static UI Data ─────────────────────────────────────────────────────────────
 
 const ZONE_BTNS: ZoneButton[] = [
   { val: "all",    label: "All",          cls: "bg-orange-600 text-white" },
@@ -252,10 +252,12 @@ export default function RestaurantPOS(): JSX.Element {
     setLoadingMenu(true);
     try {
       const res  = await fetch(`${API}/menu`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: MenuItem[] = await res.json();
       setMenuItems(data);
-    } catch {
-      notify("❌ Failed to load menu!");
+    } catch (err) {
+      console.error("Menu fetch error:", err);
+      notify("❌ Failed to load menu! Backend running?");
     } finally {
       setLoadingMenu(false);
     }
@@ -265,9 +267,11 @@ export default function RestaurantPOS(): JSX.Element {
     setLoadingTables(true);
     try {
       const res  = await fetch(`${API}/tables`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: TableItem[] = await res.json();
       setTables(data);
-    } catch {
+    } catch (err) {
+      console.error("Tables fetch error:", err);
       notify("❌ Failed to load tables!");
     } finally {
       setLoadingTables(false);
@@ -295,7 +299,7 @@ export default function RestaurantPOS(): JSX.Element {
     const ord = [...currentOrder];
     const ex  = ord.find((x) => x.menuId === menuId);
     if (ex) { ex.qty += 1; setCurrentOrder([...ord]); }
-    else setCurrentOrder([...ord, { menuId, name: m.name, price: m.price, qty: 1, emoji: m.emoji }]);
+    else setCurrentOrder([...ord, { menuId, name: m.name, price: m.price, qty: 1, emoji: m.emoji ?? "🍽️" }]);
     setMenuSearch("");
   };
 
@@ -317,9 +321,13 @@ export default function RestaurantPOS(): JSX.Element {
   const total:      number = afterDisc + gst;
   const totalItems: number = currentOrder.reduce((s, i) => s + i.qty, 0);
 
-  // ── Filtered Lists ─────────────────────────────────────────────────────────
+  // ── ✅ FIX: Search filters from menuItems loaded from backend ──────────────
   const filteredMenu: MenuItem[] = useMemo(
-    () => menuItems.filter((m) => menuSearch && m.name.toLowerCase().includes(menuSearch.toLowerCase())),
+    () => menuSearch.trim() === ""
+      ? []
+      : menuItems.filter((m) =>
+          m.name.toLowerCase().includes(menuSearch.trim().toLowerCase())
+        ),
     [menuItems, menuSearch]
   );
 
@@ -331,7 +339,6 @@ export default function RestaurantPOS(): JSX.Element {
     if (!currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
     try {
-      // 1. Create order in backend
       const orderPayload = {
         tableId:   selectedTable,
         tableName: tables.find((t) => t.id === selectedTable)?.name ?? "",
@@ -340,13 +347,10 @@ export default function RestaurantPOS(): JSX.Element {
       };
       const res   = await fetch(`${API}/orders`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(orderPayload) });
       const order = await res.json();
-
-      // 2. Immediately settle it
       await fetch(`${API}/orders/${order.id}/settle`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentMode: "CASH" }),
       });
-
       setLastBill(Math.round(total));
       setOrders((prev) => ({ ...prev, [selectedTable]: [] }));
       setDiscount(0);
@@ -489,28 +493,8 @@ export default function RestaurantPOS(): JSX.Element {
     }
   };
 
-  // ── Menu CRUD ──────────────────────────────────────────────────────────────
-  const openAddMenu  = (): void => { setForm({ name: "", price: "", category: "veg", emoji: "🍽️" }); setModal("addMenu"); };
+  // ── Menu Edit (no add from billing page) ──────────────────────────────────
   const menuForm = form as MenuFormState;
-
-  const handleAddMenu = async (): Promise<void> => {
-    if (!menuForm.name?.trim() || !menuForm.price) { notify("⚠️ Please enter name and price!"); return; }
-    setSaving(true);
-    try {
-      const res  = await fetch(`${API}/menu`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: menuForm.name.trim(), price: parseFloat(String(menuForm.price)), category: menuForm.category, emoji: menuForm.emoji || "🍽️" }),
-      });
-      const newItem: MenuItem = await res.json();
-      setMenuItems((prev) => [...prev, newItem]);
-      setModal(null);
-      notify("✅ Menu item added!");
-    } catch {
-      notify("❌ Failed to add menu item!");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleSaveMenu = async (): Promise<void> => {
     if (!menuForm.id) return;
@@ -566,21 +550,31 @@ export default function RestaurantPOS(): JSX.Element {
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
 
-        {/* Top Bar */}
+        {/* Top Bar — ✅ "+ Menu" button REMOVED */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
           <button className="text-white px-2 py-1.5 rounded text-base" style={{ background: "#444" }}>☰</button>
           <input value={selectedTableObj?.name ?? ""} readOnly placeholder="Table" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <input placeholder="Captain" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <div className="flex-1" />
-          <button onClick={openAddMenu}  className="text-white text-xs px-2 py-1 rounded" style={{ background: "#444" }}>+ Menu</button>
+          {/* ✅ "+ Menu" button REMOVED — use /menu page to manage items */}
           <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
 
         {/* Search */}
         <div className="flex gap-1.5 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
-          <input type="text" placeholder="Search by Code/Barcode/Name" value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)}
-            className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "#fff" }} />
-          <button className="text-white px-3 rounded text-sm" style={{ background: "#cc2222" }}>🔍</button>
+          <input
+            type="text"
+            placeholder="Search by Name"
+            value={menuSearch}
+            onChange={(e) => setMenuSearch(e.target.value)}
+            className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none"
+            style={{ background: "#fff" }}
+          />
+          <button
+            onClick={() => setMenuSearch("")}
+            className="text-white px-3 rounded text-sm"
+            style={{ background: "#cc2222" }}
+          >✕</button>
         </div>
 
         {/* Column Headers */}
@@ -592,18 +586,22 @@ export default function RestaurantPOS(): JSX.Element {
 
         {/* Order / Menu Search List */}
         <div className="flex-1 overflow-y-auto px-2 pb-1 space-y-0.5">
-          {loadingMenu ? <Spinner /> : menuSearch ? (
+          {loadingMenu ? <Spinner /> : menuSearch.trim() !== "" ? (
+            // ✅ Search results from backend data
             filteredMenu.length === 0 ? (
-              <div className="text-center py-6 text-gray-400 text-xs">No items found</div>
+              <div className="text-center py-6 text-gray-400 text-xs">No items found for "{menuSearch}"</div>
             ) : (
               filteredMenu.map((m) => (
                 <div key={m.id} onClick={() => addToOrder(m.id)}
                   className="grid gap-1 cursor-pointer hover:bg-yellow-50 rounded border border-gray-200"
                   style={{ gridTemplateColumns: "1fr 80px 70px" }}>
                   <div className="px-2 py-1.5 text-xs flex items-center gap-1 bg-white rounded-l">
-                    <span>{m.emoji}</span><span className="font-medium">{m.name}</span>
-                    {/* Long press to edit */}
-                    <button onClick={(e) => { e.stopPropagation(); openEditMenu(m); }} className="ml-auto text-gray-400 hover:text-blue-600 text-[10px]">✏️</button>
+                    <span>{m.emoji ?? "🍽️"}</span>
+                    <span className="font-medium">{m.name}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditMenu(m); }}
+                      className="ml-auto text-gray-400 hover:text-blue-600 text-[10px]"
+                    >✏️</button>
                   </div>
                   <div className="px-2 py-1.5 text-xs text-center bg-white text-gray-600">₹{m.price}</div>
                   <div className="px-2 py-1.5 text-xs text-center bg-white rounded-r font-bold text-green-800">+</div>
@@ -704,7 +702,6 @@ export default function RestaurantPOS(): JSX.Element {
                       <div style={{ fontSize: "9px", color: isOcc ? "#ffcccc" : "#888", fontWeight: "bold", letterSpacing: ".5px" }}>{t.zone}</div>
                       <div style={{ fontSize: "13px", fontWeight: "bold", margin: "2px 0" }}>{t.name}</div>
                       <div style={{ fontSize: "10px", color: isOcc ? "#ffcccc" : "#aaa" }}>{isOcc ? `₹${tTotal}` : "Free"}</div>
-                      {/* Delete button */}
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteTable(t.id); }}
                         className="mt-1 text-[9px] text-red-300 hover:text-red-500">🗑️</button>
                     </div>
@@ -721,7 +718,7 @@ export default function RestaurantPOS(): JSX.Element {
           )}
           <div className="fixed bottom-0 p-3 sm:p-4">
             <BackButton to="/dashboard" />
-            </div>
+          </div>
         </div>
       </div>
 
@@ -739,29 +736,6 @@ export default function RestaurantPOS(): JSX.Element {
           <div className="flex justify-end gap-2">
             <button onClick={() => setModal(null)} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
             <button onClick={handleAddTable} disabled={saving} className="px-3 py-1.5 text-sm text-white rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
-              {saving ? "Adding..." : "Add"}
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {modal === "addMenu" && (
-        <Modal title="Add New Menu Item" onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Item name"
-            value={menuForm.name ?? ""} onChange={(e) => setForm({ ...menuForm, name: e.target.value })} />
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" type="number" placeholder="Price (₹)"
-            value={menuForm.price ?? ""} onChange={(e) => setForm({ ...menuForm, price: e.target.value })} />
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Emoji"
-            value={menuForm.emoji ?? ""} onChange={(e) => setForm({ ...menuForm, emoji: e.target.value })} />
-          <select className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white"
-            value={menuForm.category ?? "veg"} onChange={(e) => setForm({ ...menuForm, category: e.target.value as Category })}>
-            <option value="veg">Veg</option>
-            <option value="nonveg">Non-Veg</option>
-            <option value="drink">Drink</option>
-          </select>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(null)} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
-            <button onClick={handleAddMenu} disabled={saving} className="px-3 py-1.5 text-sm text-white rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
               {saving ? "Adding..." : "Add"}
             </button>
           </div>
