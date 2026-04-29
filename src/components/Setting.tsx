@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "./BackButton.js";
 import Navbar from "./Navbar.js";
+import { getAllTables, addTable, updateTable, deleteTable } from "../Api/tableApi";
+import { getRestaurantInfo, saveRestaurantInfo } from "../Api/restaurantApi";
+import { getAllTaxes, addTax, updateTax, deleteTax } from "../Api/taxApi";
+import { getAllHours, saveAllHours } from "../Api/hoursApi";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ToastProps {
@@ -105,6 +109,7 @@ function SaveBtn({ onClick }: SaveBtnProps) {
 // 1. RESTAURANT INFO
 // ═══════════════════════════════════════════════════════════════════════════════
 interface RestaurantForm {
+  id?: number;
   name: string;
   email: string;
   phone: string;
@@ -116,15 +121,19 @@ interface RestaurantForm {
 
 function RestaurantInfo({ onSave }: OnSaveProps) {
   const [form, setForm] = useState<RestaurantForm>({
-    name: "Sync Restaurant",
-    email: "sync@restaurant.com",
-    phone: "+91 98765 43210",
-    address: "12, MG Road, Bengaluru, Karnataka 560001",
-    gst: "29AABCS1429B1ZB",
-    fssai: "10020022014345",
-    website: "www.syncrestaurant.com",
-  });
+    id: undefined,
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    gst: "",
+    fssai: "",
+    website: "",
+});
 
+useEffect(() => {
+    getRestaurantInfo().then(setForm);
+}, []);
   const f =
     (key: keyof RestaurantForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -202,7 +211,11 @@ function RestaurantInfo({ onSave }: OnSaveProps) {
           />
         </div>
       </div>
-      <SaveBtn onClick={() => onSave("Restaurant info saved!")} />
+    <SaveBtn onClick={async () => {
+    console.log("Saving form data:", form);
+    await saveRestaurantInfo(form);
+    onSave("Restaurant info saved!");
+}} />
     </Section>
   );
 }
@@ -211,38 +224,44 @@ function RestaurantInfo({ onSave }: OnSaveProps) {
 // 2. TAX / GST SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════════
 function TaxSettings({ onSave }: OnSaveProps) {
-  const [taxes, setTaxes] = useState<TaxEntry[]>([
-    { id: 1, name: "GST (Food)", rate: "5", enabled: true },
-    { id: 2, name: "GST (Beverages)", rate: "12", enabled: true },
-    { id: 3, name: "Service Charge", rate: "10", enabled: false },
-    { id: 4, name: "SGST", rate: "2.5", enabled: false },
-  ]);
+ const [taxes, setTaxes] = useState<TaxEntry[]>([]);
+
+useEffect(() => {
+    getAllTaxes().then(setTaxes);
+}, []);
+
   const [showAdd, setShowAdd] = useState<boolean>(false);
   const [newTax, setNewTax] = useState<{ name: string; rate: string }>({
     name: "",
     rate: "",
   });
 
-  const toggle = (id: number) =>
-    setTaxes((p) =>
-      p.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t)),
-    );
+  const toggle = async (id: number) => {
+    const tax = taxes.find((t) => t.id === id);
+    if (!tax) return;
+    const updated = await updateTax(id, { ...tax, enabled: !tax.enabled });
+    setTaxes((p) => p.map((t) => (t.id === id ? updated : t)));
+};
 
-  const updateRate = (id: number, rate: string) =>
-    setTaxes((p) => p.map((t) => (t.id === id ? { ...t, rate } : t)));
+ const updateRate = async (id: number, rate: string) => {
+    const tax = taxes.find((t) => t.id === id);
+    if (!tax) return;
+    const updated = await updateTax(id, { ...tax, rate });
+    setTaxes((p) => p.map((t) => (t.id === id ? updated : t)));
+};
 
-  const addTax = () => {
+const handleAddTax = async () => {
     if (!newTax.name || !newTax.rate) return;
-    setTaxes((p) => [
-      ...p,
-      { id: Date.now(), name: newTax.name, rate: newTax.rate, enabled: true },
-    ]);
+    const added = await addTax({ name: newTax.name, rate: newTax.rate, enabled: true });
+    setTaxes((p) => [...p, added]);
     setNewTax({ name: "", rate: "" });
     setShowAdd(false);
-  };
+};
 
-  const removeTax = (id: number) =>
+const removeTax = async (id: number) => {
+    await deleteTax(id);
     setTaxes((p) => p.filter((t) => t.id !== id));
+};
 
   return (
     <Section
@@ -327,7 +346,7 @@ function TaxSettings({ onSave }: OnSaveProps) {
               }
             />
             <button
-              onClick={addTax}
+              onClick={handleAddTax}
               className="px-3 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-all"
             >
               Add
@@ -370,14 +389,11 @@ const DAYS: string[] = [
 ];
 
 function OperatingHours({ onSave }: OnSaveProps) {
-  const [hours, setHours] = useState<HourEntry[]>(
-    DAYS.map((day, i) => ({
-      day,
-      open: "09:00",
-      close: "22:00",
-      closed: i === 6,
-    })),
-  );
+  const [hours, setHours] = useState<HourEntry[]>([]);
+
+useEffect(() => {
+    getAllHours().then(setHours);
+}, []);
 
   const update = (idx: number, key: keyof HourEntry, val: string | boolean) =>
     setHours((p) => p.map((h, i) => (i === idx ? { ...h, [key]: val } : h)));
@@ -441,7 +457,10 @@ function OperatingHours({ onSave }: OnSaveProps) {
           </div>
         ))}
       </div>
-      <SaveBtn onClick={() => onSave("Operating hours saved!")} />
+   <SaveBtn onClick={async () => {
+    await saveAllHours(hours);
+    onSave("Operating hours saved!");
+}} />
     </Section>
   );
 }
@@ -466,14 +485,12 @@ const typeColor: Record<string, string> = {
 };
 
 function TableManagement({ onSave }: OnSaveProps) {
-  const [tables, setTables] = useState<TableEntry[]>([
-    { id: 1, number: "T1", capacity: 2, type: "Indoor", active: true },
-    { id: 2, number: "T2", capacity: 4, type: "Indoor", active: true },
-    { id: 3, number: "T3", capacity: 4, type: "Indoor", active: true },
-    { id: 4, number: "T4", capacity: 6, type: "Private", active: true },
-    { id: 5, number: "T5", capacity: 2, type: "Outdoor", active: false },
-    { id: 6, number: "T6", capacity: 8, type: "Rooftop", active: true },
-  ]);
+  const [tables, setTables] = useState<TableEntry[]>([]);
+
+useEffect(() => {
+    getAllTables().then(setTables);
+}, []);
+
   const [showAdd, setShowAdd] = useState<boolean>(false);
   const [newTable, setNewTable] = useState<{
     number: string;
@@ -481,29 +498,30 @@ function TableManagement({ onSave }: OnSaveProps) {
     type: string;
   }>({ number: "", capacity: "4", type: "Indoor" });
 
-  const removeTable = (id: number) =>
+  const removeTable = async (id: number) => {
+    await deleteTable(id);
     setTables((p) => p.filter((t) => t.id !== id));
+};
 
-  const toggleActive = (id: number) =>
-    setTables((p) =>
-      p.map((t) => (t.id === id ? { ...t, active: !t.active } : t)),
-    );
+  const toggleActive = async (id: number) => {
+    const table = tables.find((t) => t.id === id);
+    if (!table) return;
+    const updated = await updateTable(id, { ...table, active: !table.active });
+    setTables((p) => p.map((t) => (t.id === id ? updated : t)));
+};
 
-  const addTable = () => {
+ const handleAddTable = async () => {
     if (!newTable.number) return;
-    setTables((p) => [
-      ...p,
-      {
-        id: Date.now(),
+    const added = await addTable({
         number: newTable.number,
         capacity: parseInt(newTable.capacity),
         type: newTable.type,
         active: true,
-      },
-    ]);
+    });
+    setTables((p) => [...p, added]);
     setNewTable({ number: "", capacity: "4", type: "Indoor" });
     setShowAdd(false);
-  };
+};
 
   return (
     <Section
@@ -618,7 +636,7 @@ function TableManagement({ onSave }: OnSaveProps) {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={addTable}
+                onClick={handleAddTable}
                 className="flex-1 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-all"
               >
                 Add Table

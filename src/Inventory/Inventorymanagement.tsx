@@ -332,7 +332,7 @@ export default function InventoryManagement() {
       `}</style>
 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
-      <Navbar variant="module" moduleName="Menu Manager" />
+      <Navbar variant="module" moduleName="Inventory" />
 
       {/* TAB BAR */}
       <div className="bg-white border-b border-gray-200 shadow-sm mt-1">

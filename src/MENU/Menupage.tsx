@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useEffect } from "react";
+import { getAllMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from "../Api/menuApi";
 import Navbar from "../components/Navbar.js";
 import BackButton from "../components/BackButton.js";
 
@@ -19,13 +21,7 @@ interface MenuForm {
 }
 
 // ─── Initial data ──────────────────────────────────────────────────────────────
-const initialItems: MenuItem[] = [
-  { id: 1, name: "Paneer Butter Masala", price: 220, category: "Veg" },
-  { id: 2, name: "Chicken Biryani", price: 280, category: "Non-Veg" },
-  { id: 3, name: "Dal Tadka", price: 150, category: "Veg" },
-  { id: 4, name: "Mutton Rogan Josh", price: 380, category: "Non-Veg" },
-  { id: 5, name: "Veg Thali", price: 200, category: "Veg" },
-];
+
 
 const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
 
@@ -46,13 +42,16 @@ const NonVegBadge = () => (
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function MenuPage() {
-  const [items, setItems] = useState<MenuItem[]>(initialItems);
+  const [items, setItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState<string>("");
   const [filter, setFilter] = useState<FilterOption>("All");
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<MenuForm>(defaultForm);
-  const [nextId, setNextId] = useState<number>(6);
+  
+  useEffect(() => {
+    getAllMenuItems().then(setItems);
+}, []);
 
   const matchesSearch = (name: string, query: string): boolean => {
     if (!query) return true;
@@ -98,41 +97,33 @@ export default function MenuPage() {
     setForm(defaultForm);
   };
 
-  const handleSave = (): void => {
+const handleSave = async (): Promise<void> => {
     const trimmedName = form.name.trim();
     const parsedPrice = parseInt(form.price);
     if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
 
     if (editId !== null) {
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === editId
-            ? {
-                ...i,
-                name: trimmedName,
-                price: parsedPrice,
-                category: form.category,
-              }
-            : i,
-        ),
-      );
+        const updated = await updateMenuItem(editId, {
+            name: trimmedName,
+            price: parsedPrice,
+            category: form.category,
+        });
+        setItems((prev) => prev.map((i) => i.id === editId ? updated : i));
     } else {
-      setItems((prev) => [
-        ...prev,
-        {
-          id: nextId,
-          name: trimmedName,
-          price: parsedPrice,
-          category: form.category,
-        },
-      ]);
-      setNextId((n) => n + 1);
+        const newItem = await addMenuItem({
+            name: trimmedName,
+            price: parsedPrice,
+            category: form.category,
+        });
+        setItems((prev) => [...prev, newItem]);
     }
     closeModal();
-  };
+};
 
-  const handleDelete = (id: number): void =>
+  const handleDelete = async (id: number): Promise<void> => {
+    await deleteMenuItem(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
+};
 
   // Field config for the modal form
   const modalFields: {
