@@ -1,22 +1,33 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ChangeEvent, type JSX } from "react";
 import { Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// ─── TYPES ───────────────────────────────────────────────────────────────
-type PasswordForm = {
+// ─── Types ─────────────────────────────────────────────────────────────────
+
+type MenuType = "account" | null;
+type NavbarVariant = "dashboard" | "module";
+
+interface ChangePasswordForm {
   current: string;
   newPass: string;
   confirm: string;
-};
+}
 
-type ShowState = {
+interface ChangePasswordShow {
   current: boolean;
   newPass: boolean;
   confirm: boolean;
-};
+}
+
+interface PasswordField {
+  key: keyof ChangePasswordForm;
+  label: string;
+  placeholder: string;
+}
 
 interface ChangePasswordModalProps {
   onClose: () => void;
+  token: string;
 }
 
 interface LogoutConfirmProps {
@@ -25,278 +36,245 @@ interface LogoutConfirmProps {
 }
 
 interface NavbarProps {
-  variant?: "dashboard" | "module";
+  variant?: NavbarVariant;
   moduleName?: string;
   moduleSubtitle?: string;
-  appName?: string; // ✅ add this
-  onSettingsClick?: () => void; // ✅ add this
+  appName?: string;
+  onSettingsClick?: () => void;
   onProfileClick?: () => void;
+  onLogout?: () => void;
 }
 
-// ─── Change Password Modal ───────────────────────────────────────────────
-function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
-  const [form, setForm] = useState<PasswordForm>({
-    current: "",
-    newPass: "",
-    confirm: "",
-  });
+interface EyeIconProps {
+  visible: boolean;
+}
 
-  const [show, setShow] = useState<ShowState>({
-    current: false,
-    newPass: false,
-    confirm: false,
-  });
+// ─── Auth helpers ──────────────────────────────────────────────────────────
 
+const API_BASE = "http://localhost:8080/api";
+
+function getStoredUser() {
+  try {
+    const get = (key: string) =>
+      localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+    return {
+      token: get("token"),
+      name: get("userName") || "User",
+      email: get("userEmail"),
+      role: get("userRole") || "ADMIN",
+    };
+  } catch {
+    return { token: "", name: "User", email: "", role: "ADMIN" };
+  }
+}
+
+// ─── Change Password Modal ─────────────────────────────────────────────────
+
+function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.Element {
+  const [form, setForm] = useState<ChangePasswordForm>({ current: "", newPass: "", confirm: "" });
+  const [show, setShow] = useState<ChangePasswordShow>({ current: false, newPass: false, confirm: false });
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (): Promise<void> => {
     setError("");
     if (!form.current || !form.newPass || !form.confirm)
       return setError("All fields are required.");
-    if (form.newPass.length < 6)
-      return setError("New password must be at least 6 characters.");
+
+    // ✅ Fix 3 — 8 characters minimum (backend ke saath match)
+    if (form.newPass.length < 8)
+      return setError("New password must be at least 8 characters.");
     if (form.newPass !== form.confirm)
       return setError("Passwords do not match.");
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
-      onClose();
-    }, 1800);
+
+    setLoading(true);
+    try {
+      // ✅ Fix 4 — axios use kar raha hai, fetch nahi
+      const res = await fetch(`${API_BASE}/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: form.current,
+          newPassword: form.newPass,
+        }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        setError(text || "Something went wrong.");
+      } else {
+        setSuccess(true);
+        setTimeout(() => { setSuccess(false); onClose(); }, 1800);
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const EyeIcon = ({ visible }: { visible: boolean }) => (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
+  const EyeIcon = ({ visible }: EyeIconProps): JSX.Element => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       {visible ? (
-        <>
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </>
+        <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>
       ) : (
-        <>
-          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </>
+        <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></>
       )}
     </svg>
   );
 
-  const fields: {
-    key: keyof PasswordForm;
-    label: string;
-    placeholder: string;
-  }[] = [
-    {
-      key: "current",
-      label: "Current Password",
-      placeholder: "Enter current password",
-    },
-    {
-      key: "newPass",
-      label: "New Password",
-      placeholder: "Enter new password",
-    },
-    {
-      key: "confirm",
-      label: "Confirm Password",
-      placeholder: "Confirm new password",
-    },
+  const fields: PasswordField[] = [
+    { key: "current", label: "Current Password", placeholder: "Enter current password" },
+    { key: "newPass", label: "New Password", placeholder: "Enter new password" },
+    { key: "confirm", label: "Confirm Password", placeholder: "Confirm new password" },
   ];
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
-      onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-        e.target === e.currentTarget && onClose()
-      }
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div
-        className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
-        style={{ animation: "cpFadeIn .25s ease" }}
-      >
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" style={{ animation: "cpFadeIn .25s ease" }}>
         <div className="bg-emerald-700 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-white font-serif text-[17px] font-semibold">
-              Change Password
-            </h2>
-            <p className="text-emerald-200 text-[11px] mt-0.5">
-              Update your account credentials
-            </p>
+            <h2 className="text-white font-serif text-[17px] font-semibold">Change Password</h2>
+            <p className="text-emerald-200 text-[11px] mt-0.5">Update your account credentials</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-emerald-200 hover:text-white text-xl leading-none transition-colors"
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="text-emerald-200 hover:text-white text-xl leading-none transition-colors">✕</button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-3.5">
-          {fields.map(({ key, label, placeholder }) => (
+          {fields.map(({ key, label, placeholder }: PasswordField) => (
             <div key={key}>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-[1.5px] mb-1.5 font-semibold">
-                {label}
-              </label>
+              <label className="block text-[10px] text-gray-400 uppercase tracking-[1.5px] mb-1.5 font-semibold">{label}</label>
               <div className="relative">
                 <input
                   type={show[key] ? "text" : "password"}
                   placeholder={placeholder}
                   value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value })}
                   className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 pr-10 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow({ ...show, [key]: !show[key] })}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
+                <button type="button" onClick={() => setShow({ ...show, [key]: !show[key] })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                   <EyeIcon visible={show[key]} />
                 </button>
               </div>
             </div>
           ))}
-          {error && (
-            <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-              ⚠ {error}
-            </p>
-          )}
-          {success && (
-            <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
-              ✓ Password changed successfully!
-            </p>
-          )}
-          <button
-            onClick={handleSubmit}
-            className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-all active:scale-95 mt-1"
-          >
-            Update Password
+          {error && <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">⚠ {error}</p>}
+          {success && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">✓ Password changed successfully!</p>}
+          <button onClick={handleSubmit} disabled={loading} className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-all active:scale-95 mt-1 disabled:opacity-60 disabled:cursor-not-allowed">
+            {loading ? "Updating…" : "Update Password"}
           </button>
-          <button
-            onClick={onClose}
-            className="w-full py-2 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all"
-          >
-            Cancel
-          </button>
+          <button onClick={onClose} className="w-full py-2 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all">Cancel</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Logout Confirmation ─────────────────────────────────────────────────
-function LogoutConfirm({ onConfirm, onCancel }: LogoutConfirmProps) {
+// ─── Logout Confirmation ───────────────────────────────────────────────────
+
+function LogoutConfirm({ onConfirm, onCancel }: LogoutConfirmProps): JSX.Element {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
-      onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-        e.target === e.currentTarget && onCancel()
-      }
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
-      <div
-        className="bg-white rounded-2xl w-full max-w-xs shadow-2xl p-6 text-center"
-        style={{ animation: "cpFadeIn .25s ease" }}
-      >
+      <div className="bg-white rounded-2xl w-full max-w-xs shadow-2xl p-6 text-center" style={{ animation: "cpFadeIn .25s ease" }}>
         <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
             <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
         </div>
-        <h3 className="font-serif text-[17px] font-bold text-gray-800 mb-1">
-          Sign Out?
-        </h3>
-        <p className="text-sm text-gray-700 mb-5">
-          You'll need to log in again to access the dashboard.
-        </p>
+        <h3 className="font-serif text-[17px] font-bold text-gray-800 mb-1">Sign Out?</h3>
+        <p className="text-sm text-gray-700 mb-5">You'll need to log in again to access the dashboard.</p>
         <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 hover:bg-red-600 text-white transition-all active:scale-95"
-          >
-            Sign Out
-          </button>
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 hover:bg-red-600 text-white transition-all active:scale-95">Sign Out</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Navbar ──────────────────────────────────────────────────────────────
+// ─── Main Navbar ───────────────────────────────────────────────────────────
+
 export default function Navbar({
   variant = "dashboard",
   moduleName = "",
   moduleSubtitle = "Restaurant Management System",
-}: NavbarProps) {
+}: NavbarProps): JSX.Element {
+
   const navigate = useNavigate();
 
-  const [openMenu, setOpenMenu] = useState<"account" | null>(null);
+  const [openMenu, setOpenMenu] = useState<MenuType>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showLogout, setShowLogout] = useState<boolean>(false);
 
-  const accountRef = useRef<HTMLDivElement | null>(null);
+  // ✅ Fix 1 — user state re-read on mount
+  const [user, setUser] = useState(getStoredUser);
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
 
-  const adminName = "Yuvraj Patil";
-  const adminRole = "Super Admin";
+  const accountRef = useRef<HTMLDivElement>(null);
 
-  const initials = adminName
+  const initials: string = user.name
     .split(" ")
-    .map((w) => w[0])
+    .map((w: string) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (accountRef.current && !accountRef.current.contains(target))
+    const handler = (e: MouseEvent): void => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node))
         setOpenMenu(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // MODULE VARIANT
+  const handleLogoutConfirm = (): void => {
+    // ✅ Fix 2 — userContact bhi clear hoga logout pe
+    ["token", "userName", "userEmail", "userRole", "userContact"].forEach((k) => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+    setShowLogout(false);
+    window.location.replace("/");
+  };
+
+  // ── MODULE VARIANT ──────────────────────────────────────────────────────
   if (variant === "module") {
     return (
-      <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-3">
+      // ✅ Fix 5 — Back button add kiya module variant mein
+      <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
         <div>
-          <h1 className="text-xl sm:text-[26px] font-serif text-white tracking-wide">
-            {moduleName}
-          </h1>
-          <p className="text-[10px] sm:text-[11px] text-white/70 tracking-[2px] uppercase mt-1 font-semibold">
-            {moduleSubtitle}
-          </p>
+          <h1 className="text-xl sm:text-[26px] font-serif text-white tracking-wide">{moduleName}</h1>
+          <p className="text-[10px] sm:text-[11px] text-white/70 tracking-[2px] uppercase mt-1 font-semibold">{moduleSubtitle}</p>
         </div>
       </div>
     );
   }
 
-  // DASHBOARD VARIANT
+  // ── DASHBOARD VARIANT ──────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -305,12 +283,14 @@ export default function Navbar({
       `}</style>
 
       <div className="w-full bg-white/5 backdrop-blur-sm px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#b2d1df]">
+
         {/* Left — Brand */}
         <h1 className="text-xl font-serif text-gray-100">🍽️ Sync Restaurant</h1>
 
         {/* Right — Icons */}
         <div className="flex items-center gap-2">
-          {/* ⚙️ Settings icon — clicking navigates directly to /settings */}
+
+          {/* ⚙️ Settings */}
           <button
             onClick={() => navigate("/settings")}
             className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors"
@@ -321,35 +301,22 @@ export default function Navbar({
           {/* 👤 Account */}
           <div className="relative" ref={accountRef}>
             <button
-              onClick={() =>
-                setOpenMenu(openMenu === "account" ? null : "account")
-              }
+              onClick={() => setOpenMenu(openMenu === "account" ? null : "account")}
               className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-colors group"
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-white/30 group-hover:border-white/60 transition-colors"
-                style={{
-                  background: "linear-gradient(135deg,#d97706,#b45309)",
-                }}
+                style={{ background: "linear-gradient(135deg,#d97706,#b45309)" }}
               >
                 <span className="text-white text-xs font-bold">{initials}</span>
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-white text-[12px] font-semibold leading-tight">
-                  {adminName}
-                </p>
-                <p className="text-white/60 text-[10px] leading-tight">
-                  {adminRole}
-                </p>
+                <p className="text-white text-[12px] font-semibold leading-tight">{user.name}</p>
+                <p className="text-white/60 text-[10px] leading-tight">{user.role}</p>
               </div>
               <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
+                width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke="white" strokeWidth="2.5" strokeLinecap="round"
                 className={`transition-transform duration-200 opacity-60 ${openMenu === "account" ? "rotate-180" : ""}`}
               >
                 <polyline points="6 9 12 15 18 9" />
@@ -361,110 +328,61 @@ export default function Navbar({
                 className="absolute right-0 top-full mt-3 w-64 bg-gray-100 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                 style={{ animation: "cpSlideDown .2s ease" }}
               >
-                <div className="px-4 py-4 bg-linear-to-br from-emerald-50 to-white border-b border-gray-100 flex items-center gap-3">
+                {/* Profile header */}
+                <div className="px-4 py-4 bg-gradient-to-br from-emerald-50 to-white border-b border-gray-100 flex items-center gap-3">
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 border-amber-200 shadow-sm"
-                    style={{
-                      background: "linear-gradient(135deg,#d97706,#b45309)",
-                    }}
+                    style={{ background: "linear-gradient(135deg,#d97706,#b45309)" }}
                   >
-                    <span className="text-white text-base font-bold">
-                      {initials}
-                    </span>
+                    <span className="text-white text-base font-bold">{initials}</span>
                   </div>
                   <div className="min-w-0">
-                    <p
-                      className="font-bold text-gray-800 text-[14px] truncate"
-                      style={{ fontFamily: "'Playfair Display',serif" }}
-                    >
-                      {adminName}
+                    <p className="font-bold text-gray-800 text-[14px] truncate" style={{ fontFamily: "'Playfair Display',serif" }}>
+                      {user.name}
                     </p>
-                    <p className="text-[11px] text-gray-400 truncate">
-                      {adminRole}
-                    </p>
+                    <p className="text-[11px] text-gray-400 truncate">{user.email || user.role}</p>
                     <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       ● Active
                     </span>
                   </div>
                 </div>
 
+                {/* Change Password */}
                 <div className="py-1.5">
                   <button
-                    onClick={() => {
-                      setOpenMenu(null);
-                      setShowPassword(true);
-                    }}
+                    onClick={() => { setOpenMenu(null); setShowPassword(true); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group text-left"
                   >
                     <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#d97706"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      >
-                        <rect
-                          x="3"
-                          y="11"
-                          width="18"
-                          height="11"
-                          rx="2"
-                          ry="2"
-                        />
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0110 0v4" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[13px] font-semibold text-gray-700">
-                        Change Password
-                      </p>
-                      <p className="text-[10px] text-gray-400">
-                        Update your credentials
-                      </p>
+                      <p className="text-[13px] font-semibold text-gray-700">Change Password</p>
+                      <p className="text-[10px] text-gray-400">Update your credentials</p>
                     </div>
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#d1d5db"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round">
                       <polyline points="9 18 15 12 9 6" />
                     </svg>
                   </button>
                 </div>
 
+                {/* Sign Out */}
                 <div className="border-t border-gray-100 p-2">
                   <button
-                    onClick={() => {
-                      setOpenMenu(null);
-                      setShowLogout(true);
-                    }}
+                    onClick={() => { setOpenMenu(null); setShowLogout(true); }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors group text-left"
                   >
                     <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0 group-hover:bg-red-100 transition-colors">
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#ef4444"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
                         <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
                         <polyline points="16 17 21 12 16 7" />
                         <line x1="21" y1="12" x2="9" y2="12" />
                       </svg>
                     </div>
-                    <p className="text-[13px] font-semibold text-red-500">
-                      Sign Out
-                    </p>
+                    <p className="text-[13px] font-semibold text-red-500">Sign Out</p>
                   </button>
                 </div>
               </div>
@@ -474,13 +392,10 @@ export default function Navbar({
       </div>
 
       {showPassword && (
-        <ChangePasswordModal onClose={() => setShowPassword(false)} />
+        <ChangePasswordModal onClose={() => setShowPassword(false)} token={user.token} />
       )}
       {showLogout && (
-        <LogoutConfirm
-          onConfirm={() => setShowLogout(false)}
-          onCancel={() => setShowLogout(false)}
-        />
+        <LogoutConfirm onConfirm={handleLogoutConfirm} onCancel={() => setShowLogout(false)} />
       )}
     </>
   );
