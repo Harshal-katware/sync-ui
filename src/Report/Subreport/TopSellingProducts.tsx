@@ -88,7 +88,7 @@ export default function TopSellingProducts(): JSX.Element {
           </h2>
         </div>
 
-        <div className="bg-linear-to-r from-emerald-500 to-green-500 text-white p-5 rounded-xl">
+        <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white p-5 rounded-xl">
           <p className="text-sm">Top Product</p>
           <h2 className="text-lg font-bold">{topProduct}</h2>
         </div>

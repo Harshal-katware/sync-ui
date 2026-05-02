@@ -112,7 +112,7 @@ export default function MonthlyReport(): React.ReactNode {
           <h2 className="text-red-500 font-bold">₹{data.refund}</h2>
         </div>
 
-        <div className="bg-linear-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
           <p>Net Sales</p>
           <h2 className="font-bold">₹{netSales}</h2>
         </div>
@@ -182,7 +182,7 @@ export default function MonthlyReport(): React.ReactNode {
       {/* Download */}
       <button
         onClick={downloadPDF}
-        className="px-6 py-2 bg-linear-to-r from-red-500 to-red-500 text-white rounded-lg shadow hover:scale-105 transition"
+        className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-500 text-white rounded-lg shadow hover:scale-105 transition"
       >
         📄 Download Report
       </button>

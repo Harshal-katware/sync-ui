@@ -144,7 +144,7 @@ export default function Customization() {
                   <h2 className="font-bold text-lg">{totalQty}</h2>
                 </div>
 
-                <div className="bg-linear-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
                   <p className="text-sm">Top Product</p>
                   <h2 className="font-bold text-lg">{topProduct}</h2>
                 </div>
