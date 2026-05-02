@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import BackButton from "../components/BackButton.js";
 import Navbar from "../components/Navbar.js";
-import axiosInstance from "../axiosInstance.js";
-const API = "/api/inventory"; // ✅ baseURL axiosInstance mein hai, isliye sirf path
+import axiosInstance from "../Api/axiosInstance"; 
+const API = "/api/inventory"; 
+import { useLang, type Language } from "../context/languageContext";
 
 // ─── TYPES ───────────────────────────────────────────────────────────
 type Item = {
