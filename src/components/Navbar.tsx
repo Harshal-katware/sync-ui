@@ -81,13 +81,16 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
     setError("");
     if (!form.current || !form.newPass || !form.confirm)
       return setError("All fields are required.");
-    if (form.newPass.length < 6)
-      return setError("New password must be at least 6 characters.");
+
+    // ✅ Fix 3 — 8 characters minimum (backend ke saath match)
+    if (form.newPass.length < 8)
+      return setError("New password must be at least 8 characters.");
     if (form.newPass !== form.confirm)
       return setError("Passwords do not match.");
 
     setLoading(true);
     try {
+      // ✅ Fix 4 — axios use kar raha hai, fetch nahi
       const res = await fetch(`${API_BASE}/auth/change-password`, {
         method: "POST",
         headers: {
@@ -209,13 +212,17 @@ export default function Navbar({
   moduleSubtitle = "Restaurant Management System",
 }: NavbarProps): JSX.Element {
 
-  // ✅ useNavigate COMPONENT KE ANDAR — pehli line
   const navigate = useNavigate();
 
   const [openMenu, setOpenMenu] = useState<MenuType>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showLogout, setShowLogout] = useState<boolean>(false);
-  const [user] = useState(getStoredUser);
+
+  // ✅ Fix 1 — user state re-read on mount
+  const [user, setUser] = useState(getStoredUser);
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
 
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -236,7 +243,8 @@ export default function Navbar({
   }, []);
 
   const handleLogoutConfirm = (): void => {
-    ["token", "userName", "userEmail", "userRole"].forEach((k) => {
+    // ✅ Fix 2 — userContact bhi clear hoga logout pe
+    ["token", "userName", "userEmail", "userRole", "userContact"].forEach((k) => {
       localStorage.removeItem(k);
       sessionStorage.removeItem(k);
     });
@@ -247,7 +255,17 @@ export default function Navbar({
   // ── MODULE VARIANT ──────────────────────────────────────────────────────
   if (variant === "module") {
     return (
-      <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-3">
+      // ✅ Fix 5 — Back button add kiya module variant mein
+      <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
         <div>
           <h1 className="text-xl sm:text-[26px] font-serif text-white tracking-wide">{moduleName}</h1>
           <p className="text-[10px] sm:text-[11px] text-white/70 tracking-[2px] uppercase mt-1 font-semibold">{moduleSubtitle}</p>
@@ -272,7 +290,7 @@ export default function Navbar({
         {/* Right — Icons */}
         <div className="flex items-center gap-2">
 
-          {/* ⚙️ Settings — seedha navigate, NO dropdown */}
+          {/* ⚙️ Settings */}
           <button
             onClick={() => navigate("/settings")}
             className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors"
