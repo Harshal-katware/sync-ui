@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import RestaurantPOS from "./BILLING/Restaurantpos";
@@ -14,28 +14,71 @@ import SettingsPage from "./components/Setting";
 
 export default function App() {
   return (
-    <BrowserRouter>
+  
+  <BrowserRouter>
+
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<InventoryManagement />} />
-        <Route path="/billing" element={<RestaurantPOS />} />
-        <Route path="/menu" element={<Menupage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-
+        <Route path="/" element={
+          <Login />} />
+ 
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>}/>
+ 
+        <Route path="/inventory" element={
+          <ProtectedRoute>
+          <InventoryManagement/>
+          </ProtectedRoute>} />
+ 
+        <Route path="/billing" element={
+          <ProtectedRoute>
+          <RestaurantPOS />
+          </ProtectedRoute>} />
+ 
+        <Route path="/menu" element={
+          <ProtectedRoute>
+            <Menupage />
+            </ProtectedRoute>} />
+ 
+        <Route path="/settings" element={
+          <ProtectedRoute>
+          <SettingsPage />
+          </ProtectedRoute>} />
+ 
         {/* REPORTS */}
-        <Route path="/reports" element={<Reports />}>
-          <Route index element={<DailyUpdate />} />
-
-          <Route path="daily-report" element={<DailyUpdate />} />
-          <Route
-            path="top-selling-products"
-            element={<TopProductsDashboard />}
-          />
-          <Route path="customization" element={<Customization />} />
-          <Route path="monthly-report" element={<MonthlyReport />} />
+        <Route path="/reports" element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>}>
+ 
+          <Route index element={
+            <ProtectedRoute>
+              <DailyUpdate />
+            </ProtectedRoute>} />
+ 
+          <Route path="daily-report" element={
+            <ProtectedRoute>
+              <DailyUpdate />
+            </ProtectedRoute>} />
+ 
+          <Route path="top-selling-products"element={
+            <ProtectedRoute>
+              <TopProductsDashboard />
+            </ProtectedRoute>} />
+ 
+          <Route path="customization" element={
+            <ProtectedRoute>
+              <Customization />
+            </ProtectedRoute>} />
+           
+          <Route path="monthly-report" element={
+            <ProtectedRoute>
+              <MonthlyReport />
+           </ProtectedRoute>} />
         </Route>
       </Routes>
+     
     </BrowserRouter>
   );
 }

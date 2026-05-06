@@ -21,8 +21,8 @@ interface MenuForm {
 }
  
 // ─── Initial data ──────────────────────────────────────────────────────────────
- 
- 
+
+
 const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
  
 // ─── Badges ────────────────────────────────────────────────────────────────────
@@ -48,11 +48,11 @@ export default function MenuPage() {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<MenuForm>(defaultForm);
- 
+  
   useEffect(() => {
     getAllMenuItems().then(setItems);
 }, []);
- 
+
   const matchesSearch = (name: string, query: string): boolean => {
     if (!query) return true;
     const q = query.toLowerCase();
@@ -96,7 +96,6 @@ export default function MenuPage() {
     setEditId(null);
     setForm(defaultForm);
   };
- 
 const handleSave = async (): Promise<void> => {
     const trimmedName = form.name.trim();
     const parsedPrice = parseInt(form.price);
@@ -119,12 +118,10 @@ const handleSave = async (): Promise<void> => {
     }
     closeModal();
 };
- 
   const handleDelete = async (id: number): Promise<void> => {
     await deleteMenuItem(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
 };
- 
   // Field config for the modal form
   const modalFields: {
     label: string;
