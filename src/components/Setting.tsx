@@ -6,7 +6,7 @@ import { getAllTables, addTable, updateTable, deleteTable } from "../Api/tableAp
 import { getRestaurantInfo, saveRestaurantInfo } from "../Api/restaurantApi";
 import { getAllTaxes, addTax, updateTax, deleteTax } from "../Api/taxApi";
 import { getAllHours, saveAllHours } from "../Api/hoursApi";
-import { useLang, type Language } from "../context/languageContext";
+import { useLang, type Language } from "../context/languageContext"; // ✅ import
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ToastProps { message: string; onDone?: () => void; }
@@ -62,7 +62,7 @@ function LanguageSettings({ onSave }: OnSaveProps) {
 
   const languages: { code: Language; label: string; native: string; flag: string }[] = [
     { code: "en", label: "English", native: "English", flag: "🇬🇧" },
-    { code: "hi", label: "Hindi", native: "हिंदी", flag: "🇮🇳" },
+    { code: "hi", label: "Hindi",   native: "हिंदी",   flag: "🇮🇳" },
   ];
 
   return (

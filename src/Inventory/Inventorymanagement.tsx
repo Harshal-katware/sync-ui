@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import BackButton from "../components/BackButton.js";
 import Navbar from "../components/Navbar.js";
 import axiosInstance from "../Api/axiosInstance"; 
+import { useLang } from "../context/languageContext";
+
 const API = "/api/inventory"; 
-import { useLang, type Language } from "../context/languageContext";
 
 // ─── TYPES ───────────────────────────────────────────────────────────
 type Item = {
@@ -83,6 +84,8 @@ function LowStockAlert({
   alerts: Item[];
   onDismiss: (id: number) => void;
 }) {
+  const { t } = useLang(); // ✅ Added translation
+  
   if (!alerts.length) return null;
   return (
     <div
@@ -109,15 +112,14 @@ function LowStockAlert({
                   fontSize: "1rem",
                 }}
               >
-                Low Stock Alert
+                {t("inv.lowStockAlert")}
               </p>
               <p className="text-sm text-orange-600 mt-0.5">
-                <span className="font-semibold">{a.name}</span> is running
-                low!&nbsp; Only{" "}
+                <span className="font-semibold">{a.name}</span> {t("inv.runningLow")}&nbsp;
                 <span className="font-bold">
                   {a.stock} {a.unit}
                 </span>{" "}
-                remaining (min: {a.minQty} {a.unit}). Please restock soon.
+                {t("inv.remaining")} ({t("inv.min")}: {a.minQty} {a.unit}). {t("inv.restock")}
               </p>
             </div>
             <button
@@ -135,7 +137,9 @@ function LowStockAlert({
 
 // ─── Log Row ─────────────────────────────────────────────────────────
 function LogRow({ entry }: { entry: LogEntry }) {
+  const { t } = useLang(); // ✅ Added translation
   const isIn = entry.type === "IN";
+  
   return (
     <div
       className="flex items-center gap-3 py-2.5 px-4 rounded-xl"
@@ -148,7 +152,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
           color: isIn ? "#15803d" : "#c2410c",
         }}
       >
-        {isIn ? "Stock In" : "Used"}
+        {isIn ? t("inv.stockIn") : t("inv.markUsed")}
       </span>
       <span
         className="flex-1 font-medium text-gray-700"
@@ -196,6 +200,7 @@ function StatCard({
 
 // ─── MAIN ────────────────────────────────────────────────────────────
 export default function InventoryManagement() {
+  const { t } = useLang(); // ✅ Translated text access
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string>("");
@@ -224,37 +229,30 @@ export default function InventoryManagement() {
   const [search, setSearch] = useState<string>("");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  // ── Toast helper ──────────────────────────────────────────────────
-  const showToast = (
-    message: string,
-    type: "success" | "error" = "success"
-  ) => {
+  const showToast = (message: string, type: "success" | "error" = "success") => {
     const id = Date.now();
     setToasts((p) => [...p, { id, message, type }]);
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3000);
   };
 
-  // ✅ fetch — axiosInstance use kar raha hai (JWT auto-attach)
   const fetchItems = useCallback(async () => {
     try {
       setApiError("");
       const res = await axiosInstance.get<Item[]>(API);
       setItems(res.data);
     } catch (e: any) {
-      setApiError(e.response?.data?.error || "Could not connect to server.");
+      setApiError(e.response?.data?.error || t("inv.networkError")); // ✅ Translated Error
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
 
   useEffect(() => {
-    setAlerts(
-      items.filter((i) => i.stock <= i.minQty && !dismissedIds.has(i.id))
-    );
+    setAlerts(items.filter((i) => i.stock <= i.minQty && !dismissedIds.has(i.id)));
   }, [items, dismissedIds]);
 
   const dismissAlert = (id: number) => setDismissed((p) => new Set([...p, id]));
@@ -265,16 +263,15 @@ export default function InventoryManagement() {
       minute: "2-digit",
     });
 
-  // ✅ Stock In / Mark Used — axiosInstance
   const handleTransaction = async () => {
     setFormErr("");
     const item = items.find((i) => i.id === Number(form.itemId));
     const qty = parseFloat(form.qty);
 
-    if (!item) return setFormErr("Please select an item.");
-    if (!qty || qty <= 0) return setFormErr("Enter a valid quantity.");
+    if (!item) return setFormErr(t("inv.selectItem")); // ✅ Translated Error
+    if (!qty || qty <= 0) return setFormErr(t("inv.validQty")); // ✅ Translated Error
     if (modal?.type === "OUT" && qty > item.stock)
-      return setFormErr(`Only ${item.stock} ${item.unit} available.`);
+      return setFormErr(`Only ${item.stock} ${item.unit} ${t("inv.available")}.`); // ✅ Translated
 
     const endpoint =
       modal?.type === "IN"
@@ -288,14 +285,7 @@ export default function InventoryManagement() {
       setItems((p) => p.map((i) => (i.id === updated.id ? updated : i)));
 
       setLog((p) => [
-        {
-          id: Date.now(),
-          type: modal!.type,
-          name: item.name,
-          qty,
-          unit: item.unit,
-          time: now(),
-        },
+        { id: Date.now(), type: modal!.type, name: item.name, qty, unit: item.unit, time: now() },
         ...p,
       ]);
 
@@ -316,16 +306,15 @@ export default function InventoryManagement() {
       setModal(null);
       setForm({ itemId: "", qty: "" });
     } catch (e: any) {
-      setFormErr(e.response?.data?.error || "Network error. Please try again.");
+      setFormErr(e.response?.data?.error || t("inv.networkError")); // ✅ Translated Error
     }
   };
 
-  // ✅ Add New Item — axiosInstance
   const handleAddItem = async () => {
     setFormErr("");
-    if (!newItem.name.trim()) return setFormErr("Item name is required.");
+    if (!newItem.name.trim()) return setFormErr(t("inv.itemName") + " is required."); // Optional translate
     if (!newItem.minQty || parseFloat(newItem.minQty) < 0)
-      return setFormErr("Enter a valid minimum quantity.");
+      return setFormErr(t("inv.validQty"));
 
     try {
       const res = await axiosInstance.post<Item>(API, {
@@ -342,7 +331,7 @@ export default function InventoryManagement() {
       setAddItemModal(false);
       setNewItem({ name: "", unit: "kg", stock: "0", minQty: "" });
     } catch (e: any) {
-      setFormErr(e.response?.data?.error || "Network error. Please try again.");
+      setFormErr(e.response?.data?.error || t("inv.networkError"));
     }
   };
 
@@ -350,21 +339,13 @@ export default function InventoryManagement() {
     i.name.toLowerCase().includes(search.toLowerCase())
   );
   const lowCount = items.filter((i) => i.stock <= i.minQty).length;
-  const todayIn = log
-    .filter((l) => l.type === "IN")
-    .reduce((s, l) => s + l.qty, 0);
-  const todayUsed = log
-    .filter((l) => l.type === "OUT")
-    .reduce((s, l) => s + l.qty, 0);
+  const todayIn = log.filter((l) => l.type === "IN").reduce((s, l) => s + l.qty, 0);
+  const todayUsed = log.filter((l) => l.type === "OUT").reduce((s, l) => s + l.qty, 0);
 
-  const inp =
-    "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
+  const inp = "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
 
   return (
-    <div
-      className="h-screen overflow-hidden flex flex-col"
-      style={{ background: "#faf9f6", fontFamily: "'DM Sans',sans-serif" }}
-    >
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#faf9f6", fontFamily: "'DM Sans',sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
         @keyframes slideDown { from{opacity:0;transform:translateY(-18px)} to{opacity:1;transform:translateY(0)} }
@@ -381,19 +362,18 @@ export default function InventoryManagement() {
       `}</style>
 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
-      <Toast
-        toasts={toasts}
-        onRemove={(id) => setToasts((p) => p.filter((t) => t.id !== id))}
-      />
-      <Navbar variant="module" moduleName="Inventory " />
+      <Toast toasts={toasts} onRemove={(id) => setToasts((p) => p.filter((t) => t.id !== id))} />
+      
+      {/* ✅ Translated Navbar Module Name */}
+      <Navbar variant="module" moduleName={t("inv.title")} />
 
       {/* TAB BAR */}
       <div className="bg-white border-b border-gray-200 shadow-sm mt-1">
         <div className="w-full px-6 flex">
           {[
-            { key: "dashboard", label: "Dashboard" },
-            { key: "log", label: "Today's Log" },
-            { key: "items", label: "Items" },
+            { key: "dashboard", label: t("inv.dashboard") },
+            { key: "log", label: t("inv.log") },
+            { key: "items", label: t("inv.items") },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -403,10 +383,7 @@ export default function InventoryManagement() {
             >
               {label}
               {activeTab === key && (
-                <span
-                  className="absolute bottom-0 left-5 right-5 h-0.5 rounded-full"
-                  style={{ background: "#d97706" }}
-                />
+                <span className="absolute bottom-0 left-5 right-5 h-0.5 rounded-full" style={{ background: "#d97706" }} />
               )}
             </button>
           ))}
@@ -417,11 +394,8 @@ export default function InventoryManagement() {
       {apiError && (
         <div className="mx-4 mt-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50 flex items-center justify-between gap-3">
           <span className="text-sm text-red-600 font-medium">⚠ {apiError}</span>
-          <button
-            onClick={fetchItems}
-            className="text-xs font-bold text-red-700 underline"
-          >
-            Retry
+          <button onClick={fetchItems} className="text-xs font-bold text-red-700 underline">
+            {t("inv.retry")}
           </button>
         </div>
       )}
@@ -431,9 +405,7 @@ export default function InventoryManagement() {
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <div className="spinner" />
-            <p className="text-sm text-gray-400 font-medium">
-              Loading inventory...
-            </p>
+            <p className="text-sm text-gray-400 font-medium">{t("inv.loading")}</p>
           </div>
         ) : (
           <>
@@ -441,17 +413,17 @@ export default function InventoryManagement() {
             {activeTab === "dashboard" && (
               <div style={{ animation: "fadeIn .4s ease" }}>
                 <div className="grid grid-cols-4 gap-3 mb-4 w-full">
-                  <StatCard label="Total Items" value={items.length} accent="#1c1917" />
-                  <StatCard label="Low Stock" value={lowCount} accent={lowCount ? "#ea580c" : "#16a34a"} />
-                  <StatCard label="Stocked Today" value={todayIn.toFixed(1)} accent="#16a34a" />
-                  <StatCard label="Used Today" value={todayUsed.toFixed(1)} accent="#ea580c" />
+                  <StatCard label={t("inv.totalItems")} value={items.length} accent="#1c1917" />
+                  <StatCard label={t("inv.lowStock")} value={lowCount} accent={lowCount ? "#ea580c" : "#16a34a"} />
+                  <StatCard label={t("inv.stockToday")} value={todayIn.toFixed(1)} accent="#16a34a" />
+                  <StatCard label={t("inv.usedToday")} value={todayUsed.toFixed(1)} accent="#ea580c" />
                 </div>
 
                 <div className="max-w-6xl mx-auto">
                   <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
                     <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
                       <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>
-                        Current Stock
+                        {t("inv.currentStock")}
                       </h2>
                       <div className="relative flex-1 min-w-50 max-w-sm">
                         <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -460,7 +432,7 @@ export default function InventoryManagement() {
                         </svg>
                         <input
                           type="text"
-                          placeholder="Search items..."
+                          placeholder={t("inv.search")}
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           className="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
@@ -472,14 +444,14 @@ export default function InventoryManagement() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <button onClick={() => { setModal({ type: "IN" }); setFormErr(""); }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#16a34a,#15803d)" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                          Stock In
+                          {t("inv.stockIn")}
                         </button>
                         <button onClick={() => { setModal({ type: "OUT" }); setFormErr(""); }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#ea580c,#c2410c)" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                          Mark Used
+                          {t("inv.markUsed")}
                         </button>
                         <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95" style={{ color: "#d97706", borderColor: "#fde68a", background: "#fffbeb" }}>
-                          + Add Item
+                          {t("inv.addItem")}
                         </button>
                       </div>
                     </div>
@@ -488,7 +460,7 @@ export default function InventoryManagement() {
                       {filteredItems.length === 0 ? (
                         <div className="py-12 text-center text-gray-400">
                           <p className="text-3xl mb-2">🔍</p>
-                          <p className="font-medium text-sm">No items match "<span className="text-gray-600">{search}</span>"</p>
+                          <p className="font-medium text-sm">{t("inv.noItems")} <span className="text-gray-600">{search && `"${search}"`}</span></p>
                         </div>
                       ) : (
                         filteredItems.map((item) => {
@@ -508,7 +480,7 @@ export default function InventoryManagement() {
                                   <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                     <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: isLow ? "#f97316" : "#22c55e" }} />
                                   </div>
-                                  <span className="text-xs text-gray-400 shrink-0">min {item.minQty} {item.unit}</span>
+                                  <span className="text-xs text-gray-400 shrink-0">{t("inv.min")} {item.minQty} {item.unit}</span>
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
@@ -530,13 +502,13 @@ export default function InventoryManagement() {
               <div style={{ animation: "fadeIn .4s ease" }}>
                 <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
                   <div className="px-5 py-4 border-b border-gray-100">
-                    <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>Today's Transactions</h2>
+                    <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>{t("inv.todayTransactions")}</h2>
                   </div>
                   {log.length === 0 ? (
                     <div className="py-20 text-center text-gray-400">
                       <p className="text-4xl mb-3">📋</p>
-                      <p className="font-medium">No transactions yet today.</p>
-                      <p className="text-sm mt-1">Use "Stock In" or "Mark Used" to log activity.</p>
+                      <p className="font-medium">{t("inv.noTransactions")}</p>
+                      <p className="text-sm mt-1">{t("inv.useStockIn")}</p>
                     </div>
                   ) : (
                     <div className="stock-scroll overflow-y-auto p-3 flex flex-col gap-2" style={{ maxHeight: "480px" }}>
@@ -552,14 +524,14 @@ export default function InventoryManagement() {
               <div style={{ animation: "fadeIn .4s ease" }}>
                 <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
                   <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
-                    <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>All Items & Triggers</h2>
-                    <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors">+ Add Item</button>
+                    <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>{t("inv.allItems")}</h2>
+                    <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors">{t("inv.addItem")}</button>
                   </div>
                   <div className="stock-scroll overflow-y-auto" style={{ maxHeight: "480px" }}>
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 bg-white z-10">
                         <tr className="border-b border-gray-100">
-                          {["Item", "Unit", "Current Stock", "Min Trigger", "Status"].map((h) => (
+                          {[t("inv.item"), t("inv.unit"), t("inv.currentStockCol"), t("inv.minTrigger"), t("inv.status")].map((h) => (
                             <th key={h} className="px-4 py-3 text-left text-xs uppercase tracking-widest text-gray-400 font-semibold">{h}</th>
                           ))}
                         </tr>
@@ -597,29 +569,29 @@ export default function InventoryManagement() {
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6" style={{ animation: "fadeIn .25s ease" }}>
             <div className="flex items-center justify-between mb-5">
               <h3 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.2rem", color: modal.type === "IN" ? "#15803d" : "#c2410c" }}>
-                {modal.type === "IN" ? "➕ Stock In" : "➖ Mark As Used"}
+                {modal.type === "IN" ? `➕ ${t("inv.stockIn")}` : `➖ ${t("inv.markUsed")}`}
               </h3>
               <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Item</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{t("inv.item")}</label>
                 <select className={inp} value={form.itemId} onChange={(e) => setForm({ ...form, itemId: e.target.value })}>
                   <option value="">— Select item —</option>
                   {items.map((i) => (
-                    <option key={i.id} value={i.id}>{i.name} ({i.stock} {i.unit} available)</option>
+                    <option key={i.id} value={i.id}>{i.name} ({i.stock} {i.unit} {t("inv.available")})</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
-                  Quantity ({form.itemId ? items.find((i) => i.id === Number(form.itemId))?.unit : "unit"})
+                  {t("inv.quantity")} ({form.itemId ? items.find((i) => i.id === Number(form.itemId))?.unit : t("inv.unit")})
                 </label>
                 <input type="number" min="0" step="0.1" placeholder="e.g. 10" className={inp} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} />
               </div>
               {formErr && <p className="text-xs text-red-600 font-medium">{formErr}</p>}
               <button onClick={handleTransaction} className="mt-1 w-full py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 shadow" style={{ background: modal.type === "IN" ? "linear-gradient(135deg,#16a34a,#15803d)" : "linear-gradient(135deg,#ea580c,#c2410c)" }}>
-                {modal.type === "IN" ? "Add to Stock" : "Deduct from Stock"}
+                {modal.type === "IN" ? t("inv.addToStock") : t("inv.deductStock")}
               </button>
             </div>
           </div>
@@ -631,17 +603,17 @@ export default function InventoryManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(4px)" }}>
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6" style={{ animation: "fadeIn .25s ease" }}>
             <div className="flex items-center justify-between mb-5">
-              <h3 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.2rem" }}>📦 New Item</h3>
+              <h3 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.2rem" }}>📦 {t("inv.newItem")}</h3>
               <button onClick={() => setAddItemModal(false)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Item Name</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{t("inv.itemName")}</label>
                 <input type="text" placeholder="e.g. Chicken" className={inp} value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Unit</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{t("inv.unit")}</label>
                   <select className={inp} value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}>
                     {["kg", "g", "L", "ml", "pcs", "dozen", "pack"].map((u) => (
                       <option key={u} value={u}>{u}</option>
@@ -649,18 +621,18 @@ export default function InventoryManagement() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Opening Stock</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{t("inv.openingStock")}</label>
                   <input type="number" min="0" step="0.1" placeholder="0" className={inp} value={newItem.stock} onChange={(e) => setNewItem({ ...newItem, stock: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Min Qty Trigger</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">{t("inv.minQty")}</label>
                 <input type="number" min="0" step="0.1" placeholder="e.g. 5" className={inp} value={newItem.minQty} onChange={(e) => setNewItem({ ...newItem, minQty: e.target.value })} />
-                <p className="text-xs text-gray-400 mt-1">Alert fires when stock drops to this level.</p>
+                <p className="text-xs text-gray-400 mt-1">{t("inv.minQtyHint")}</p>
               </div>
               {formErr && <p className="text-xs text-red-600 font-medium">{formErr}</p>}
               <button onClick={handleAddItem} className="mt-1 w-full py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 shadow" style={{ background: "linear-gradient(135deg,#d97706,#b45309)" }}>
-                Add Item
+                {t("inv.addItem").replace('+ ', '')}
               </button>
             </div>
           </div>
