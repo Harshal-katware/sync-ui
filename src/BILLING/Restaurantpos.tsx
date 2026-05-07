@@ -4,16 +4,20 @@ import axiosInstance from "../Api/axiosInstance";
 // ── KOT Print CSS — injected once into <head> so no external CSS file needed ─
 const KOT_PRINT_STYLE = `
   @media print {
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
     body * { visibility: hidden !important; }
     .kot-print-area, .kot-print-area * { visibility: visible !important; }
     .kot-print-area {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 80mm !important;
+      width: 76mm !important;
       font-family: monospace !important;
-      font-size: 12px !important;
-      padding: 8px !important;
+      font-size: 13px !important;
+      padding: 6px !important;
       background: white !important;
       display: block !important;
     }
@@ -278,9 +282,12 @@ export default function RestaurantPOS(): JSX.Element {
   const [loadingTables, setLoadingTables] = useState<boolean>(true);
   const [saving,        setSaving]        = useState<boolean>(false);
 
-  // ✅ KOT print ke liye items — sentQty update se pehle snapshot
-  const [kotItemsToPrint, setKotItemsToPrint] = useState<{ menuId: number; name: string; emoji: string; qty: number }[]>([]);
+  const [kotItemsToPrint, setKotItemsToPrint] = useState<{ menuId: number; name: string; emoji: string; price: number; qty: number }[]>([]);
   const [kotTableInfo,    setKotTableInfo]    = useState<{ name: string; zone: string } | null>(null);
+
+  const [billItemsToPrint, setBillItemsToPrint] = useState<{ menuId: number; name: string; emoji: string; price: number; qty: number }[]>([]);
+  const [billInfo,         setBillInfo]         = useState<{ tableName: string; subtotal: number; discount: number; gst: number; total: number } | null>(null);
+  const [shouldPrintBillReceipt, setShouldPrintBillReceipt] = useState(false);
 
   useEffect(() => {
     injectPrintStyle();
@@ -295,6 +302,31 @@ export default function RestaurantPOS(): JSX.Element {
   useEffect(() => {
     localStorage.setItem("pos_table_order_ids", JSON.stringify(tableOrderIds));
   }, [tableOrderIds]);
+
+  const [shouldPrint, setShouldPrint] = useState(false);
+  useEffect(() => {
+    if (shouldPrint && kotItemsToPrint.length > 0) {
+      setShouldPrint(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.print();
+          setTimeout(() => setKotItemsToPrint([]), 500);
+        });
+      });
+    }
+  }, [shouldPrint, kotItemsToPrint]);
+
+  useEffect(() => {
+    if (shouldPrintBillReceipt && billItemsToPrint.length > 0) {
+      setShouldPrintBillReceipt(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.print();
+          setTimeout(() => setBillItemsToPrint([]), 500);
+        });
+      });
+    }
+  }, [shouldPrintBillReceipt, billItemsToPrint]);
 
   const fetchMenuItems = async () => {
     setLoadingMenu(true);
@@ -392,7 +424,7 @@ export default function RestaurantPOS(): JSX.Element {
       name:   i.name,
       emoji:  i.emoji,
       price:  i.price,
-      qty:    i.qty - i.sentQty,   // sirf naye items ki qty
+      qty:    i.qty - i.sentQty,
     }));
 
     setSaving(true);
@@ -420,24 +452,16 @@ export default function RestaurantPOS(): JSX.Element {
         await axiosInstance.post(`/api/orders/${orderId}/kot`, { items: kotItems });
       }
 
-      // ✅ Step 1: Print area mein items set karo PEHLE
       setKotItemsToPrint(kotItems);
       setKotTableInfo({ name: tableObj?.name ?? "", zone: tableObj?.zone ?? "" });
 
-      // ✅ Step 2: sentQty update karo
       setOrders((prev) => ({
         ...prev,
         [selectedTable!]: snapshot.map((i) => ({ ...i, sentQty: i.qty })),
       }));
 
       notify(`🖨️ KOT Sent to Kitchen! (${kotItems.length} item${kotItems.length > 1 ? "s" : ""})`);
-
-      // ✅ Step 3: DOM update hone ke baad print karo
-      setTimeout(() => {
-        window.print();
-        // Print ke baad clear karo
-        setTimeout(() => setKotItemsToPrint([]), 1000);
-      }, 400);
+      setShouldPrint(true);
 
     } catch (err: any) {
       console.error("❌ printKOT BACKEND ERROR:", err.response?.data);
@@ -458,19 +482,22 @@ export default function RestaurantPOS(): JSX.Element {
   const printBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
+    const tableObj   = tables.find((t) => t.id === selectedTable);
     const orderPayload = {
-      tableId:      selectedTable,
-      tableName:    tables.find((t) => t.id === selectedTable)?.name ?? "",
-      items:        currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })),
+      tableId:   selectedTable,
+      tableName: tableObj?.name ?? "",
+      items:     currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })),
       subtotal, discount: discAmt, gst, serviceCharge: 0, billCharge: 0, total,
     };
     try {
-      console.log("📤 printBill POST /api/orders payload:", JSON.stringify(orderPayload, null, 2));
       await axiosInstance.post("/api/orders", orderPayload);
+
+      setBillItemsToPrint(currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })));
+      setBillInfo({ tableName: tableObj?.name ?? "", subtotal, discount: discAmt, gst, total });
+      setShouldPrintBillReceipt(true);
+
       notify("🖨️ Bill sent to printer!");
-      window.print();
     } catch (err: any) {
-      // ✅ BACKEND ERROR CLEARLY LOGGED
       console.error("❌ printBill BACKEND ERROR:", err.response?.data);
       console.error("❌ printBill STATUS:", err.response?.status);
       console.error("❌ printBill PAYLOAD:", orderPayload);
@@ -513,7 +540,6 @@ export default function RestaurantPOS(): JSX.Element {
       setDiscount(0);
       notify(`✅ ₹${finalTotal.toFixed(0)} Settled via ${paymentMode}`);
     } catch (err: any) {
-      // ✅ BACKEND ERROR CLEARLY LOGGED
       console.error("❌ handlePrintBillConfirm BACKEND ERROR:", err.response?.data);
       console.error("❌ handlePrintBillConfirm STATUS:", err.response?.status);
       notify("❌ Failed to settle bill!");
@@ -544,7 +570,6 @@ export default function RestaurantPOS(): JSX.Element {
       await axiosInstance.put(`/api/orders/${orderId}/save`);
       notify("💾 KOT Saved!");
     } catch (err: any) {
-      // ✅ BACKEND ERROR CLEARLY LOGGED
       console.error("❌ saveKOT BACKEND ERROR:", err.response?.data);
       console.error("❌ saveKOT STATUS:", err.response?.status);
       notify("❌ Failed to save KOT!");
@@ -568,7 +593,6 @@ export default function RestaurantPOS(): JSX.Element {
       await axiosInstance.put(`/api/orders/${order.id}/save`);
       notify("💾 Bill Saved!");
     } catch (err: any) {
-      // ✅ BACKEND ERROR CLEARLY LOGGED
       console.error("❌ saveBill BACKEND ERROR:", err.response?.data);
       console.error("❌ saveBill STATUS:", err.response?.status);
       console.error("❌ saveBill PAYLOAD:", orderPayload);
@@ -635,7 +659,6 @@ export default function RestaurantPOS(): JSX.Element {
 
         {/* Top Bar */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
-          <button className="text-white px-2 py-1.5 rounded text-base" style={{ background: "#444" }}>☰</button>
           <input value={selectedTableObj?.name ?? ""} readOnly placeholder="Table" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <input placeholder="Captain" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <div className="flex-1" />
@@ -643,7 +666,7 @@ export default function RestaurantPOS(): JSX.Element {
         </div>
 
         {/* Search */}
-        <div className="flex gap-1.5 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
+        <div className="flex gap-3 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
           <input type="text" placeholder="Search by Code/Barcode/Name" value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)}
             className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "#fff" }} />
           <button className="text-white px-3 rounded text-sm" style={{ background: "#cc2222" }}>🔍</button>
@@ -833,19 +856,22 @@ export default function RestaurantPOS(): JSX.Element {
 
       {toast && <Toast msg={toast} />}
 
-      {/* ✅ KOT Print Area — kotItemsToPrint se render hoga, sentQty update se affect nahi hoga */}
+      {/* ✅ KOT Print Area */}
       {kotItemsToPrint.length > 0 && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
-          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "16px", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>
+          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "18px", marginBottom: "2px", letterSpacing: "1px" }}>
+            PATIL DHABHA
+          </div>
+          <div style={{ textAlign: "center", fontSize: "16px", fontWeight: "bold", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>
             *** KOT ***
           </div>
-          <div style={{ fontSize: "11px", marginBottom: "4px" }}>
+          <div style={{ fontSize: "13px", marginBottom: "4px" }}>
             <b>Table:</b> {kotTableInfo?.name ?? ""} &nbsp;|&nbsp; <b>Zone:</b> {kotTableInfo?.zone ?? ""}
           </div>
-          <div style={{ fontSize: "10px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "4px" }}>
+          <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "4px" }}>
             {new Date().toLocaleString("en-IN")}
           </div>
-          <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px dashed #000" }}>
                 <th style={{ textAlign: "left", paddingBottom: "4px" }}>Item</th>
@@ -855,16 +881,95 @@ export default function RestaurantPOS(): JSX.Element {
             <tbody>
               {kotItemsToPrint.map((item) => (
                 <tr key={item.menuId}>
-                  <td style={{ paddingTop: "5px", fontSize: "13px" }}>{item.emoji} {item.name}</td>
-                  <td style={{ textAlign: "center", paddingTop: "5px", fontWeight: "bold", fontSize: "15px" }}>
+                  <td style={{ paddingTop: "5px", fontSize: "14px" }}>{item.emoji} {item.name}</td>
+                  <td style={{ textAlign: "center", paddingTop: "5px", fontWeight: "bold", fontSize: "16px" }}>
                     {item.qty}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div style={{ textAlign: "center", marginTop: "12px", fontSize: "11px", borderTop: "1px dashed #000", paddingTop: "6px" }}>
-            ** KOT **
+          <div style={{ textAlign: "center", marginTop: "12px", fontSize: "12px", borderTop: "1px dashed #000", paddingTop: "6px" }}>
+            ** KOT END **
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Bill Receipt Print Area — UPDATED */}
+      {billItemsToPrint.length > 0 && billInfo && (
+        <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+
+          {/* ✅ Restaurant Name — sabse upar */}
+          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "20px", letterSpacing: "1px", marginBottom: "2px" }}>
+            PATIL DHABHA
+          </div>
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }}>
+            {/* Yahan address ya phone number add kar sakte ho */}
+          </div>
+
+          {/* Bill Receipt Title */}
+          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>
+            BILL RECEIPT
+          </div>
+
+          {/* Table & Date */}
+          <div style={{ fontSize: "13px", marginBottom: "3px" }}>
+            <b>Table:</b> {billInfo.tableName}
+          </div>
+          <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "5px" }}>
+            {new Date().toLocaleString("en-IN")}
+          </div>
+
+          {/* Items Table */}
+          <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px dashed #000" }}>
+                <th style={{ textAlign: "left", paddingBottom: "5px" }}>Item</th>
+                <th style={{ textAlign: "center", paddingBottom: "5px" }}>Qty</th>
+                <th style={{ textAlign: "right", paddingBottom: "5px" }}>Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billItemsToPrint.map((item) => (
+                <tr key={item.menuId}>
+                  <td style={{ paddingTop: "5px" }}>{item.emoji} {item.name}</td>
+                  <td style={{ textAlign: "center", paddingTop: "5px" }}>{item.qty}</td>
+                  <td style={{ textAlign: "right", paddingTop: "5px" }}>₹{item.price * item.qty}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* ✅ Summary — GST REMOVED, font size bada */}
+          <div style={{ borderTop: "1px dashed #000", marginTop: "8px", paddingTop: "8px", fontSize: "14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span>Subtotal</span>
+              <span>₹{billInfo.subtotal.toFixed(2)}</span>
+            </div>
+            {billInfo.discount > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span>Discount</span>
+                <span>-₹{billInfo.discount.toFixed(2)}</span>
+              </div>
+            )}
+            {/* ❌ GST line removed */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontWeight: "bold",
+              fontSize: "17px",
+              marginTop: "6px",
+              borderTop: "1px dashed #000",
+              paddingTop: "6px"
+            }}>
+              <span>TOTAL</span>
+              <span>₹{billInfo.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ textAlign: "center", marginTop: "14px", fontSize: "13px" }}>
+            Thank you! Visit Again 🙏
           </div>
         </div>
       )}
