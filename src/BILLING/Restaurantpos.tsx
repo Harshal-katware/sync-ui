@@ -383,7 +383,7 @@ export default function RestaurantPOS(): JSX.Element {
     const toSend   = snapshot.filter((i) => i.qty > i.sentQty);
     if (toSend.length === 0) { notify("⚠️ No new items to send to kitchen!"); return; }
 
-    const kotItems = toSend.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty - i.sentQty }));
+    const kotItems = toSend.map((i) => ({ menuId:  i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty - i.sentQty }));
 
     setSaving(true);
     try {
