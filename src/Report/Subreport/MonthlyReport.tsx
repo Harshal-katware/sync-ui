@@ -1,4 +1,7 @@
-import jsPDF from "jspdf";
+import { useState, useEffect } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
 import {
   BarChart,
   Bar,
@@ -12,6 +15,9 @@ import {
   Legend,
 } from "recharts";
 
+import { getMonthlyReport } from "../../Api/reportApi";
+import { useLang } from "../../context/languageContext";
+
 interface TopItem {
   name: string;
   qty: number;
@@ -21,12 +27,14 @@ interface PaymentData {
   cash: number;
   upi: number;
   card: number;
+  online: number;
 }
 
 interface ReportData {
   totalSales: number;
   discount: number;
   refund: number;
+  netSales: number;
   orders: number;
   avgOrder: number;
   payment: PaymentData;
@@ -38,153 +46,285 @@ interface PieEntry {
   value: number;
 }
 
-export default function MonthlyReport(): React.ReactNode {
-  const today: Date = new Date();
+const COLORS = [
+  "#7c3aed",
+  "#ec4899",
+  "#22c55e",
+  "#f59e0b",
+];
 
-  const monthName: string = today.toLocaleString("default", {
+export default function MonthlyReport(): React.ReactNode {
+  const { t } = useLang();
+
+  const today = new Date();
+
+  const monthName = today.toLocaleString("default", {
     month: "long",
     year: "numeric",
   });
 
-  const data: ReportData = {
-    totalSales: 120000,
-    discount: 10000,
-    refund: 5000,
-    orders: 600,
-    avgOrder: 200,
-    payment: {
-      cash: 30000,
-      upi: 70000,
-      card: 20000,
-    },
-    topItems: [
-      { name: "Pizza", qty: 200 },
-      { name: "Burger", qty: 150 },
-      { name: "Pasta", qty: 100 },
-    ],
-  };
+  const [data, setData] = useState<ReportData | null>(null);
 
-  const netSales: number = data.totalSales - data.discount - data.refund;
+  const [loading, setLoading] = useState(true);
 
-  const barData: TopItem[] = data.topItems;
+  const [error, setError] = useState("");
 
-  const pieData: PieEntry[] = Object.entries(data.payment).map(
-    ([key, value]: [string, number]) => ({
-      name: key,
-      value: value,
-    }),
-  );
+  useEffect(() => {
+    getMonthlyReport()
+      .then(setData)
+      .catch(() => setError(t("rep.monthly.error")))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const COLORS: string[] = ["#7c3aed", "#ec4899", "#22c55e"];
+  const netSales = data?.netSales ?? 0;
 
-  const downloadPDF = (): void => {
+  const pieData: PieEntry[] = data?.payment
+    ? Object.entries(data.payment)
+        .filter(([, v]) => v > 0)
+        .map(([key, value]) => ({
+          name: key.toUpperCase(),
+          value,
+        }))
+    : [];
+
+  // PDF
+  const downloadPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Monthly Report", 20, 20);
-    doc.text(`Month: ${monthName}`, 20, 30);
-    doc.text(`Total Sales: ₹${data.totalSales}`, 20, 40);
+    // Title
+    doc.setFontSize(20);
+    doc.text(t("rep.monthly.title"), 14, 20);
+
+    doc.setFontSize(12);
+
+    doc.text(`Month: ${monthName}`, 14, 30);
+
+    // Summary Table
+    autoTable(doc, {
+      startY: 40,
+      head: [["Metric", "Value"]],
+      body: [
+        [
+          t("rep.monthly.totalSales"),
+          `Rs. ${data?.totalSales ?? 0}`,
+        ],
+
+        [
+          t("rep.monthly.discount"),
+          `Rs. ${data?.discount ?? 0}`,
+        ],
+
+        [
+          t("rep.monthly.refund"),
+          `Rs. ${data?.refund ?? 0}`,
+        ],
+
+        [
+          t("rep.monthly.netSales"),
+          `Rs. ${netSales}`,
+        ],
+
+        [
+          t("rep.monthly.orders"),
+          `${data?.orders ?? 0}`,
+        ],
+
+        [
+          t("rep.monthly.avgOrder"),
+          `Rs. ${data?.avgOrder ?? 0}`,
+        ],
+      ],
+    });
+
+    const finalY =
+      (doc as any).lastAutoTable?.finalY || 60;
+
+    // Top Products Table
+    autoTable(doc, {
+      startY: finalY + 10,
+
+      head: [[
+        t("rep.top.product"),
+        t("rep.top.qty"),
+      ]],
+
+      body:
+        data?.topItems?.length
+          ? data.topItems.map((item) => [
+              item.name,
+              item.qty,
+            ])
+          : [[t("rep.monthly.noDataMonth"), "-"]],
+    });
+
+    // Footer
+    doc.setFontSize(10);
+
+    doc.text(
+      `Generated on ${new Date().toLocaleString()}`,
+      14,
+      280
+    );
 
     doc.save("monthly-report.pdf");
   };
+
+  // Loading
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+      </div>
+    );
+
+  // Error
+  if (error)
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
+        ⚠ {error}
+      </div>
+    );
 
   return (
     <div className="space-y-6">
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-serif text-gray-800">Monthly Report</h1>
-        <p className="text-gray-500">{monthName}</p>
+        <h1 className="text-2xl font-serif text-gray-800">
+          {t("rep.monthly.title")}
+        </h1>
+
+        <p className="text-gray-500">
+          {monthName}
+        </p>
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>Total Sales</p>
-          <h2 className="font-bold">₹{data.totalSales}</h2>
+          <p>
+            {t("rep.monthly.totalSales")}
+          </p>
+
+          <h2 className="font-bold">
+            ₹{data?.totalSales ?? 0}
+          </h2>
         </div>
 
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>Discount</p>
-          <h2 className="text-yellow-600 font-bold">₹{data.discount}</h2>
+          <p>
+            {t("rep.monthly.discount")}
+          </p>
+
+          <h2 className="text-yellow-600 font-bold">
+            ₹{data?.discount ?? 0}
+          </h2>
         </div>
 
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>Refund</p>
-          <h2 className="text-red-500 font-bold">₹{data.refund}</h2>
+          <p>
+            {t("rep.monthly.refund")}
+          </p>
+
+          <h2 className="text-red-500 font-bold">
+            ₹{data?.refund ?? 0}
+          </h2>
         </div>
 
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
-          <p>Net Sales</p>
-          <h2 className="font-bold">₹{netSales}</h2>
+          <p>
+            {t("rep.monthly.netSales")}
+          </p>
+
+          <h2 className="font-bold">
+            ₹{netSales}
+          </h2>
         </div>
       </div>
 
       {/* Orders */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          Orders: <b>{data.orders}</b>
+          {t("rep.monthly.orders")}:
+          <b> {data?.orders ?? 0}</b>
         </div>
+
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          Avg Order: <b>₹{data.avgOrder}</b>
+          {t("rep.monthly.avgOrder")}:
+          <b> ₹{data?.avgOrder ?? 0}</b>
         </div>
       </div>
 
-      {/* Chart Section */}
-      <div className="grid grid-cols-2 gap-6">
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
         <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
-          <p className="mb-3 font-semibold">Top Products</p>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={barData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip cursor={false} />
-              <Bar dataKey="qty" fill="#7c3aed" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="mb-3 font-semibold">
+            {t("rep.monthly.topProducts")}
+          </p>
+
+          {(data?.topItems?.length ?? 0) === 0 ? (
+            <p className="text-center text-gray-400 py-10">
+              {t("rep.monthly.noDataMonth")}
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={data?.topItems ?? []}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip cursor={false} />
+
+                <Bar
+                  dataKey="qty"
+                  fill="#7c3aed"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Pie Chart */}
         <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
-          <p className="mb-3 font-semibold">Payment Methods</p>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={80}
-                label
-              >
-                {pieData.map((entry: PieEntry, index: number) => (
-                  <Cell
-                    key={index}
-                    fill={COLORS[index % COLORS.length] ?? "#cccccc"}
-                  />
-                ))}
-              </Pie>
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          <p className="mb-3 font-semibold">
+            {t("rep.monthly.paymentMethods")}
+          </p>
+
+          {pieData.length === 0 ? (
+            <p className="text-center text-gray-400 py-10">
+              {t("rep.monthly.noPaymentData")}
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={80}
+                  label
+                >
+                  {pieData.map((_, index) => (
+                    <Cell
+                      key={index}
+                      fill={
+                        COLORS[index % COLORS.length]
+                      }
+                    />
+                  ))}
+                </Pie>
+
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      {/* Top Products List */}
-      <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
-        <h2 className="font-semibold mb-4">Top Selling Products</h2>
-        {data.topItems.map((item: TopItem, i: number) => (
-          <div key={i} className="flex justify-between border-b py-2">
-            <span>{item.name}</span>
-            <span className="font-semibold">{item.qty} sold</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Download */}
+      {/* Download Button */}
       <button
         onClick={downloadPDF}
-        className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-500 text-white rounded-lg shadow hover:scale-105 transition"
+        className="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow hover:scale-105 transition"
       >
-        📄 Download Report
+        {t("rep.monthly.download")}
       </button>
     </div>
   );

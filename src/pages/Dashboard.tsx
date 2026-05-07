@@ -3,115 +3,110 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar.js";
 import type { JSX } from "react";
 import restroImage from "../assets/restro4.jpg";
- 
+import { useLang } from "../context/languageContext";
+
 interface NavCard {
   title: string;
   desc: string;
   icon: string;
   path: string;
 }
- 
+
 export default function Dashboard(): JSX.Element {
+  const { t, lang } = useLang(); // ✅ lang bhi lo taaki clock locale sahi ho
   const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
- 
-  //  Live clock
+
+  // Live clock
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
- 
-  //  Username from storage
+
+  // Username from storage
   const userName =
     localStorage.getItem("userName") ||
     sessionStorage.getItem("userName") ||
     "Admin";
- 
-  //  Greeting
+
+  // ✅ Greeting — language ke hisaab se
   const greeting = () => {
     const h = time.getHours();
-    if (h < 12) return "Good Morning";
-    if (h < 17) return "Good Afternoon";
-    return "Good Evening";
+    if (h < 12) return t("dash.morning");
+    if (h < 17) return t("dash.afternoon");
+    return t("dash.evening");
   };
- 
+
+  // ✅ Clock locale — language ke hisaab se
+  const clockLocale = lang === "en" ? "en-IN" : lang === "hi" ? "hi-IN" : "mr-IN";
+
+  // ✅ Nav cards — translated
   const navCards: NavCard[] = [
-    { title: "Billing", desc: "Manage orders easily", icon: "🧾", path: "/billing" },
-    { title: "Menu", desc: "Update food items", icon: "🍽️", path: "/menu" },
-    { title: "Inventory", desc: "Track stock", icon: "📦", path: "/inventory" },
-    { title: "Reports", desc: "View analytics", icon: "📊", path: "/reports" },
+    { title: t("dash.billing"),   desc: t("dash.billingDesc"),   icon: "🧾", path: "/billing" },
+    { title: t("dash.menu"),      desc: t("dash.menuDesc"),      icon: "🍽️", path: "/menu" },
+    { title: t("dash.inventory"), desc: t("dash.inventoryDesc"), icon: "📦", path: "/inventory" },
+    { title: t("dash.reports"),   desc: t("dash.reportsDesc"),   icon: "📊", path: "/reports" },
   ];
- 
+
   return (
     <div className="min-h-screen relative">
       {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${restroImage})` }}
-      />
- 
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${restroImage})` }} />
+
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/10" />
- 
+
       {/* Content */}
       <div className="relative z-10">
         <div className="relative z-50">
           <Navbar variant="dashboard" />
         </div>
- 
+
         {/* Main Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
- 
-          {/*  Heading with greeting + live clock */}
+
+          {/* Heading with greeting + live clock */}
           <div className="mb-6 sm:mb-8 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
               <p className="text-emerald-400 text-sm font-semibold tracking-widest uppercase mb-1">
                 {greeting()}, {userName} 👋
               </p>
               <h1 className="text-2xl sm:text-3xl font-bold">
-                Restaurant Dashboard
+                {t("dash.title")}
               </h1>
               <p className="text-sm sm:text-base opacity-80">
-                Manage your restaurant efficiently
+                {t("dash.subtitle")}
               </p>
             </div>
- 
-            {/*  Live clock */}
+
+            {/* Live clock */}
             <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-2xl px-4 py-2.5 backdrop-blur-sm self-start sm:self-auto">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
               <div>
                 <p className="text-white font-semibold text-lg leading-none tabular-nums">
-                  {time.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  {time.toLocaleTimeString(clockLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </p>
                 <p className="text-white/50 text-1xl mt-0.5">
-                  {time.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                  {time.toLocaleDateString(clockLocale, { weekday: "short", day: "numeric", month: "short" })}
                 </p>
               </div>
             </div>
           </div>
- 
-          {/* Cards — same as before */}
+
+          {/* Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {navCards.map((card: NavCard) => (
               <div
                 key={card.title}
                 onClick={() => navigate(card.path)}
-                className="bg-white/5 backdrop-blur-lg border border-white/30 
-                rounded-2xl p-4 sm:p-6 cursor-pointer 
-                hover:scale-[1.03] hover:shadow-2xl transition-all duration-300"
+                className="bg-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-4 sm:p-6 cursor-pointer hover:scale-[1.03] hover:shadow-2xl transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xl sm:text-2xl">{card.icon}</span>
-                  <p className="text-xl sm:text-2xl font-semibold text-white">
-                    {card.title}
-                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-white">{card.title}</p>
                 </div>
-                <p className="text-sm sm:text-base text-gray-200 mt-2">
-                  {card.desc}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-300 mt-3">
-                  Click to manage →
-                </p>
+                <p className="text-sm sm:text-base text-gray-200 mt-2">{card.desc}</p>
+                <p className="text-xs sm:text-sm text-gray-300 mt-3">{t("dash.clickManage")}</p>
               </div>
             ))}
           </div>
@@ -120,4 +115,3 @@ export default function Dashboard(): JSX.Element {
     </div>
   );
 }
- 
