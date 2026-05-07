@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import BackButton from "../components/BackButton.js";
 import Navbar from "../components/Navbar.js";
-import axiosInstance from "../Api/axiosInstance";
+import axiosInstance from "../Api/axiosInstance.js";
 const API = "/api/inventory"; // ✅ baseURL axiosInstance mein hai, isliye sirf path
 
 // ─── TYPES ───────────────────────────────────────────────────────────

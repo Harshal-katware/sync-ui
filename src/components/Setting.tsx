@@ -6,19 +6,17 @@ import { getAllTables, addTable, deleteTable } from "../Api/tableApi";
 import { getRestaurantInfo, saveRestaurantInfo } from "../Api/restaurantApi";
 import { getAllTaxes, addTax, updateTax, deleteTax } from "../Api/taxApi";
 import { getAllHours, saveAllHours } from "../Api/hoursApi";
+import { useLang, type Language } from "../context/languageContext"; // ✅ import
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-interface ToastProps {
-  message: string;
-  onDone?: () => void;
-}
+interface ToastProps { message: string; onDone?: () => void; }
+interface SectionProps { icon: string; title: string; subtitle: string; children: React.ReactNode; }
+interface SaveBtnProps { onClick: () => void; }
+interface TaxEntry { id: number; name: string; rate: string; enabled: boolean; }
+interface HourEntry { day: string; open: string; close: string; closed: boolean; }
+interface TableEntry { id: number; number: string; capacity: number; type: string; active: boolean; }
+interface OnSaveProps { onSave: (message: string) => void; }
 
-interface SectionProps {
-  icon: string;
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}
 
 interface SaveBtnProps {
   onClick: () => void;
@@ -58,30 +56,19 @@ const label =
 // ─── Toast notification ────────────────────────────────────────────────────────
 function Toast({ message, onDone }: ToastProps) {
   return (
-    <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2"
-      style={{ animation: "toastUp .3s ease" }}
-    >
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2" style={{ animation: "toastUp .3s ease" }}>
       <span className="text-base">✓</span> {message}
     </div>
   );
 }
 
-// ─── Section wrapper ───────────────────────────────────────────────────────────
 function Section({ icon, title, subtitle, children }: SectionProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-lg shrink-0">
-          {icon}
-        </div>
+        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-lg shrink-0">{icon}</div>
         <div>
-          <h2
-            className="font-bold text-gray-800 text-[15px]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            {title}
-          </h2>
+          <h2 className="font-bold text-gray-800 text-[15px]" style={{ fontFamily: "'Playfair Display', serif" }}>{title}</h2>
           <p className="text-[11px] text-gray-400">{subtitle}</p>
         </div>
       </div>
@@ -90,17 +77,55 @@ function Section({ icon, title, subtitle, children }: SectionProps) {
   );
 }
 
-// ─── Save Button ───────────────────────────────────────────────────────────────
 function SaveBtn({ onClick }: SaveBtnProps) {
+  const { t } = useLang();
   return (
     <div className="flex justify-end mt-5">
-      <button
-        onClick={onClick}
-        className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm"
-      >
-        Save Changes
+      <button onClick={onClick} className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl transition-all active:scale-95 shadow-sm">
+        {t("settings.saveChanges")}
       </button>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✅ LANGUAGE SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+function LanguageSettings({ onSave }: OnSaveProps) {
+  const { lang, setLang, t } = useLang();
+
+  const languages: { code: Language; label: string; native: string; flag: string }[] = [
+    { code: "en", label: "English", native: "English", flag: "🇬🇧" },
+    { code: "hi", label: "Hindi",   native: "हिंदी",   flag: "🇮🇳" },
+  ];
+
+  return (
+    <Section icon="🌐" title={t("settings.language")} subtitle={t("settings.languageSubtitle")}>
+      <div className="flex flex-col gap-3">
+        {languages.map((l) => (
+          <button
+            key={l.code}
+            onClick={() => { setLang(l.code); onSave(`Language changed to ${l.label}!`); }}
+            className={`flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
+              lang === l.code
+                ? "border-emerald-500 bg-emerald-50"
+                : "border-gray-100 bg-white hover:border-emerald-200 hover:bg-gray-50"
+            }`}
+          >
+            <span className="text-2xl">{l.flag}</span>
+            <div className="flex-1">
+              <p className={`font-bold text-sm ${lang === l.code ? "text-emerald-700" : "text-gray-700"}`}>
+                {l.native}
+              </p>
+              <p className="text-xs text-gray-400">{l.label}</p>
+            </div>
+            {lang === l.code && (
+              <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </Section>
   );
 }
 
@@ -108,14 +133,8 @@ function SaveBtn({ onClick }: SaveBtnProps) {
 // 1. RESTAURANT INFO
 // ═══════════════════════════════════════════════════════════════════════════════
 interface RestaurantForm {
-  id?: number;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  gst: string;
-  fssai: string;
-  website: string;
+  id?: number; name: string; email: string; phone: string;
+  address: string; gst: string; fssai: string; website: string;
 }
 
 function RestaurantInfo({ onSave }: OnSaveProps) {
@@ -270,7 +289,7 @@ function TaxSettings({ onSave }: OnSaveProps) {
           </button>
         )}
       </div>
-      <SaveBtn onClick={() => onSave("Tax settings saved!")} />
+      <SaveBtn onClick={() => onSave("settings.tax") + " saved!"} />
     </Section>
   );
 }
@@ -279,6 +298,7 @@ function TaxSettings({ onSave }: OnSaveProps) {
 // 3. OPERATING HOURS
 // ═══════════════════════════════════════════════════════════════════════════════
 function OperatingHours({ onSave }: OnSaveProps) {
+  const { t } = useLang();
   const [hours, setHours] = useState<HourEntry[]>([]);
 
   useEffect(() => {
@@ -340,6 +360,7 @@ const zoneColor: Record<string, string> = {
 };
 
 function TableManagement({ onSave }: OnSaveProps) {
+  const { t } = useLang();
   const [tables, setTables] = useState<TableEntry[]>([]);
   const [showAdd, setShowAdd] = useState<boolean>(false);
   const [newTable, setNewTable] = useState<{ name: string; zone: string }>({
@@ -379,9 +400,7 @@ function TableManagement({ onSave }: OnSaveProps) {
               ✕
             </button>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg shrink-0">
-                🪑
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-lg shrink-0">🪑</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-800 text-base" style={{ fontFamily: "'Playfair Display',serif" }}>
                   {t.name}
@@ -427,11 +446,11 @@ function TableManagement({ onSave }: OnSaveProps) {
             className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-emerald-600 min-h-[120px]"
           >
             <span className="text-3xl">+</span>
-            <span className="text-xs font-semibold">Add New Table</span>
+            <span className="text-xs font-semibold">{t("settings.addTable")}</span>
           </button>
         )}
       </div>
-      <SaveBtn onClick={() => onSave("Table settings saved!")} />
+      <SaveBtn onClick={() => onSave(t("settings.tables") + " saved!")} />
     </Section>
   );
 }
@@ -439,7 +458,7 @@ function TableManagement({ onSave }: OnSaveProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
-type SectionKey = "restaurant" | "tax" | "hours" | "tables";
+type SectionKey = "restaurant" | "tax" | "hours" | "tables" | "language";
 
 interface SectionNav {
   key: SectionKey;
@@ -456,8 +475,17 @@ const SECTIONS: SectionNav[] = [
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [activeSection, setActiveSection] = useState<SectionKey>("restaurant");
   const [toast, setToast] = useState<string>("");
+
+  const SECTIONS: SectionNav[] = [
+    { key: "restaurant", label: t("settings.restaurantInfo"), icon: "🏪" },
+    { key: "tax",        label: t("settings.tax"),            icon: "🧾" },
+    { key: "hours",      label: t("settings.hours"),          icon: "🕐" },
+    { key: "tables",     label: t("settings.tables"),         icon: "🪑" },
+    { key: "language",   label: t("settings.language"),       icon: "🌐" }, // ✅ New
+  ];
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -501,13 +529,7 @@ export default function SettingsPage() {
 
         <div className="sm:hidden w-full fixed bottom-0 left-0 z-40 bg-white border-t border-gray-100 flex">
           {SECTIONS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setActiveSection(s.key)}
-              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-semibold transition-colors ${
-                activeSection === s.key ? "text-emerald-700" : "text-gray-400"
-              }`}
-            >
+            <button key={s.key} onClick={() => setActiveSection(s.key)} className={`flex-1 flex flex-col items-center py-2 text-[10px] font-semibold transition-colors ${activeSection === s.key ? "text-emerald-700" : "text-gray-400"}`}>
               <span className="text-lg">{s.icon}</span>
               {s.label.split(" ")[0]}
             </button>
