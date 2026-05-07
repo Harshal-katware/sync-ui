@@ -6,14 +6,14 @@ import { useLang } from "../context/languageContext"; // ✅
 
 type Category = "Veg" | "Non-Veg";
 type FilterOption = "All" | Category;
-
+ 
 interface MenuItem {
   id: number;
   name: string;
   price: number;
   category: Category;
 }
-
+ 
 interface MenuForm {
   name: string;
   price: string;
@@ -21,7 +21,7 @@ interface MenuForm {
 }
 
 const defaultForm: MenuForm = { name: "", price: "", category: "Veg" };
-
+ 
 // ─── Badges ────────────────────────────────────────────────────────────────────
 const VegBadge = ({ label }: { label: string }) => (
   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium bg-[#edf7f0] text-[#1e7a3e] border border-[#a8d8b8]">
@@ -36,7 +36,7 @@ const NonVegBadge = ({ label }: { label: string }) => (
     {label}
   </span>
 );
-
+ 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function MenuPage() {
   const { t } = useLang(); // ✅
@@ -59,11 +59,11 @@ export default function MenuPage() {
     const initials = name.split(" ").map((w) => w.charAt(0).toLowerCase()).join("");
     return initials.includes(q);
   };
-
+ 
   const filtered = items.filter(
     (i) => matchesSearch(i.name, search) && (filter === "All" || i.category === filter)
   );
-
+ 
   const vegCount = items.filter((i) => i.category === "Veg").length;
   const nonVegCount = items.filter((i) => i.category === "Non-Veg").length;
 
@@ -79,7 +79,7 @@ export default function MenuPage() {
     const trimmedName = form.name.trim();
     const parsedPrice = parseInt(form.price);
     if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
-
+ 
     if (editId !== null) {
       const updated = await updateMenuItem(editId, { name: trimmedName, price: parsedPrice, category: form.category });
       setItems((prev) => prev.map((i) => i.id === editId ? updated : i));
@@ -131,7 +131,7 @@ export default function MenuPage() {
             </div>
           ))}
         </div>
-
+ 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-3">
           <div className="relative w-full sm:max-w-xs">
@@ -234,12 +234,12 @@ export default function MenuPage() {
           )}
         </div>
       </div>
-
+ 
       {/* Back button */}
       <div className="fixed bottom-0 left-0 p-3 sm:p-4">
         <BackButton to="/dashboard" />
       </div>
-
+ 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-[#1a1200]/45 flex items-center justify-center z-50 px-4" onClick={(e) => e.target === e.currentTarget && closeModal()}>
@@ -250,7 +250,7 @@ export default function MenuPage() {
               </h2>
               <button onClick={closeModal} className="text-[#9b8e75] hover:text-[#1a1200] text-xl leading-none px-1 transition-colors">×</button>
             </div>
-
+ 
             {modalFields.map((field) => (
               <div key={field.key} className="mb-3.5">
                 <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">{field.label}</label>
@@ -264,7 +264,7 @@ export default function MenuPage() {
                 />
               </div>
             ))}
-
+ 
             <div className="mb-5">
               <label className="block text-[11px] text-[#9b8e75] uppercase tracking-[1.2px] mb-1.5">{t("menu.category")}</label>
               <select
@@ -276,7 +276,7 @@ export default function MenuPage() {
                 <option value="Non-Veg">{t("menu.nonVeg")}</option>
               </select>
             </div>
-
+ 
             <div className="flex justify-end gap-2 sm:gap-3">
               <button onClick={closeModal} className="px-4 sm:px-5 py-2 text-[13px] border border-[#e2d9c9] rounded-lg text-[#6b5f50] hover:border-[#b8ac9a] hover:text-[#1a1200] transition-colors">
                 {t("menu.cancel")}
@@ -291,3 +291,5 @@ export default function MenuPage() {
     </div>
   );
 }
+ 
+ 

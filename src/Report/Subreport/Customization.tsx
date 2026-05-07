@@ -1,8 +1,16 @@
 import { useState, type ChangeEvent } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { getCustomReport } from "../../Api/reportApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useLang } from "../../context/languageContext";
 
 type PaymentType = "all" | "CASH" | "UPI" | "CARD" | "ONLINE";
 type OrderType = "all" | "dine-in" | "takeaway" | "online";
@@ -23,6 +31,8 @@ interface CustomResult {
 }
 
 export default function Customization() {
+  const { t } = useLang();
+
   const [payment, setPayment] = useState<PaymentType>("all");
   const [orderType, setOrderType] = useState<OrderType>("all");
   const [show, setShow] = useState(false);
@@ -33,15 +43,17 @@ export default function Customization() {
   const handleGenerate = async () => {
     setLoading(true);
     setError("");
+
     try {
       const res = await getCustomReport({
         payment: payment === "all" ? undefined : payment,
         orderType: orderType === "all" ? undefined : orderType,
       });
+
       setResult(res);
       setShow(true);
     } catch {
-      setError("Failed to load report.");
+      setError(t("rep.custom.error"));
     } finally {
       setLoading(false);
     }
@@ -55,17 +67,21 @@ export default function Customization() {
     setError("");
   };
 
-  // ✅ PDF FUNCTION
+  // PDF FUNCTION
   const downloadPDF = () => {
     if (!result) return;
 
     const doc = new jsPDF();
 
     doc.setFontSize(20);
-    doc.text("Custom Sales Report", 14, 20);
+    doc.text(t("rep.custom.title"), 14, 20);
 
     doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(
+      `Generated on: ${new Date().toLocaleString()}`,
+      14,
+      30
+    );
 
     doc.text(`Payment: ${payment.toUpperCase()}`, 14, 38);
     doc.text(`Order Type: ${orderType}`, 14, 46);
@@ -74,9 +90,9 @@ export default function Customization() {
       startY: 55,
       head: [["Summary", "Value"]],
       body: [
-        ["Total Sales", `Rs. ${result.totalSales}`],
-        ["Items Sold", `${result.totalQty}`],
-        ["Top Product", `${result.topProduct}`],
+        [t("rep.custom.totalSales"), `Rs. ${result.totalSales}`],
+        [t("rep.custom.itemsSold"), `${result.totalQty}`],
+        [t("rep.custom.topProduct"), `${result.topProduct}`],
       ],
     });
 
@@ -84,7 +100,15 @@ export default function Customization() {
 
     autoTable(doc, {
       startY: finalY + 10,
-      head: [["Item", "Qty", "Revenue", "Payment", "Type"]],
+      head: [
+        [
+          t("rep.custom.item"),
+          t("rep.custom.qty"),
+          t("rep.custom.revenue"),
+          t("rep.custom.payment"),
+          t("rep.custom.type"),
+        ],
+      ],
       body: result.items.length
         ? result.items.map((item) => [
             item.name,
@@ -93,7 +117,7 @@ export default function Customization() {
             item.payment,
             item.type,
           ])
-        : [["No Data", "-", "-", "-", "-"]],
+        : [[t("rep.custom.noData"), "-", "-", "-", "-"]],
     });
 
     doc.setFontSize(10);
@@ -105,12 +129,14 @@ export default function Customization() {
 
   return (
     <div className="space-y-6">
-
       {/* Title */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Custom Report</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          {t("rep.custom.title")}
+        </h1>
+
         <p className="text-gray-500 text-sm sm:text-base">
-          Filter and generate your own report
+          {t("rep.custom.subtitle")}
         </p>
       </div>
 
@@ -124,11 +150,25 @@ export default function Customization() {
             }
             className="bg-gray-100 border p-3 rounded-lg w-full"
           >
-            <option value="all">All Payments</option>
-            <option value="CASH">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="CARD">Card</option>
-            <option value="ONLINE">Online</option>
+            <option value="all">
+              {t("rep.custom.allPayments")}
+            </option>
+
+            <option value="CASH">
+              {t("rep.custom.cash")}
+            </option>
+
+            <option value="UPI">
+              {t("rep.custom.upi")}
+            </option>
+
+            <option value="CARD">
+              {t("rep.custom.card")}
+            </option>
+
+            <option value="ONLINE">
+              {t("rep.custom.online")}
+            </option>
           </select>
 
           <select
@@ -138,42 +178,58 @@ export default function Customization() {
             }
             className="bg-gray-100 border p-3 rounded-lg w-full"
           >
-            <option value="all">All Orders</option>
-            <option value="dine-in">Dine-in</option>
-            <option value="takeaway">Takeaway</option>
-            <option value="online">Online</option>
+            <option value="all">
+              {t("rep.custom.allOrders")}
+            </option>
+
+            <option value="dine-in">
+              {t("rep.custom.dineIn")}
+            </option>
+
+            <option value="takeaway">
+              {t("rep.custom.takeaway")}
+            </option>
+
+            <option value="online">
+              {t("rep.custom.online")}
+            </option>
           </select>
         </div>
 
-        {/* ✅ BUTTONS */}
+        {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleGenerate}
             disabled={loading}
             className="w-full sm:w-auto px-6 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 disabled:opacity-60"
           >
-            {loading ? "Loading..." : "Generate"}
+            {loading
+              ? t("rep.custom.loading")
+              : t("rep.custom.generate")}
           </button>
 
           <button
             onClick={resetFilters}
             className="w-full sm:w-auto px-6 py-2 bg-gray-400 text-white rounded-lg"
           >
-            Reset
+            {t("rep.custom.reset")}
           </button>
 
-          {/* ✅ DOWNLOAD BUTTON ADDED */}
           {show && result && (
             <button
               onClick={downloadPDF}
-              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg shadow  transition"
+              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg shadow transition"
             >
-              📄 Download Report
+              {t("rep.custom.download")}
             </button>
           )}
         </div>
 
-        {error && <p className="text-red-500 text-sm">⚠ {error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm">
+            ⚠ {error}
+          </p>
+        )}
       </div>
 
       {/* Result */}
@@ -181,29 +237,49 @@ export default function Customization() {
         <>
           {result.items.length === 0 ? (
             <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
-              No data found ❌
+              {t("rep.custom.noData")}
             </div>
           ) : (
             <>
               {/* Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600">Total Sales</p>
-                  <h2 className="font-bold text-lg">₹{result.totalSales}</h2>
+                  <p className="text-sm text-gray-600">
+                    {t("rep.custom.totalSales")}
+                  </p>
+
+                  <h2 className="font-bold text-lg">
+                    ₹{result.totalSales}
+                  </h2>
                 </div>
+
                 <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600">Items Sold</p>
-                  <h2 className="font-bold text-lg">{result.totalQty}</h2>
+                  <p className="text-sm text-gray-600">
+                    {t("rep.custom.itemsSold")}
+                  </p>
+
+                  <h2 className="font-bold text-lg">
+                    {result.totalQty}
+                  </h2>
                 </div>
+
                 <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
-                  <p className="text-sm">Top Product</p>
-                  <h2 className="font-bold text-lg">{result.topProduct}</h2>
+                  <p className="text-sm">
+                    {t("rep.custom.topProduct")}
+                  </p>
+
+                  <h2 className="font-bold text-lg">
+                    {result.topProduct}
+                  </h2>
                 </div>
               </div>
 
               {/* Chart */}
               <div className="bg-gray-200 p-4 sm:p-6 rounded-xl shadow-sm">
-                <p className="mb-3 font-semibold">Sales Chart</p>
+                <p className="mb-3 font-semibold">
+                  {t("rep.custom.salesChart")}
+                </p>
+
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={result.items}>
                     <XAxis dataKey="name" />
@@ -219,21 +295,49 @@ export default function Customization() {
                 <table className="w-full text-sm min-w-150">
                   <thead className="bg-gray-300">
                     <tr>
-                      <th className="p-3 text-left">Item</th>
-                      <th className="p-3 text-left">Qty</th>
-                      <th className="p-3 text-left">Revenue</th>
-                      <th className="p-3 text-left">Payment</th>
-                      <th className="p-3 text-left">Type</th>
+                      <th className="p-3 text-left">
+                        {t("rep.custom.item")}
+                      </th>
+
+                      <th className="p-3 text-left">
+                        {t("rep.custom.qty")}
+                      </th>
+
+                      <th className="p-3 text-left">
+                        {t("rep.custom.revenue")}
+                      </th>
+
+                      <th className="p-3 text-left">
+                        {t("rep.custom.payment")}
+                      </th>
+
+                      <th className="p-3 text-left">
+                        {t("rep.custom.type")}
+                      </th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {result.items.map((item, i) => (
-                      <tr key={i} className="border-t hover:bg-gray-300 transition">
+                      <tr
+                        key={i}
+                        className="border-t hover:bg-gray-300 transition"
+                      >
                         <td className="p-3">{item.name}</td>
+
                         <td className="p-3">{item.qty}</td>
-                        <td className="p-3 text-green-600">₹{item.revenue}</td>
-                        <td className="p-3">{item.payment}</td>
-                        <td className="p-3 capitalize">{item.type}</td>
+
+                        <td className="p-3 text-green-600">
+                          ₹{item.revenue}
+                        </td>
+
+                        <td className="p-3">
+                          {item.payment}
+                        </td>
+
+                        <td className="p-3 capitalize">
+                          {item.type}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

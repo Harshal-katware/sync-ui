@@ -10,7 +10,7 @@ axiosInstance.interceptors.request.use((config) => {
         localStorage.getItem("token") ||
         sessionStorage.getItem("token");
 
-    console.log("Token:", token);
+    console.log("Token:", token); // ✅ Keep this for now
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -30,15 +30,5 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-// ✅ Har request mein automatically JWT token lagega
-axiosInstance.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem("token") || sessionStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export default axiosInstance;
