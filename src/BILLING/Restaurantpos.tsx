@@ -346,10 +346,6 @@ export default function RestaurantPOS(): JSX.Element {
 
   const filteredTables: TableItem[] = tables.filter((t) => zone === "all" || t.zone === zone);
 
-  // ── KEY FIX: ensureOrderId ────────────────────────────────────────────────
-  // Agar order pehle se exist karta hai toh wahi return karo
-  // Naya order tabhi banao jab pehle se koi orderId nahi hai
-  // Is se saveBill / printBill / settle sab ek hi order use karenge
   const ensureOrderId = async (tableId: number, orderItems: OrderItem[]): Promise<number> => {
     const existing = tableOrderIds[tableId] ?? null;
     if (existing) return existing;
@@ -383,7 +379,7 @@ export default function RestaurantPOS(): JSX.Element {
     const toSend   = snapshot.filter((i) => i.qty > i.sentQty);
     if (toSend.length === 0) { notify("⚠️ No new items to send to kitchen!"); return; }
 
-    const kotItems = toSend.map((i) => ({ menuId:  i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty - i.sentQty }));
+    const kotItems = toSend.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty - i.sentQty }));
 
     setSaving(true);
     try {
@@ -391,7 +387,6 @@ export default function RestaurantPOS(): JSX.Element {
       let orderId    = tableOrderIds[selectedTable] ?? null;
 
       if (!orderId) {
-        // Pehla KOT — naya order banao sirf KOT items se
         const sub  = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
         const payload = {
           tableId: selectedTable, tableName: tableObj?.name ?? "",
@@ -402,12 +397,10 @@ export default function RestaurantPOS(): JSX.Element {
         orderId = order.id as number;
         setTableOrderIds((prev) => ({ ...prev, [selectedTable!]: orderId }));
       } else {
-        // Order already hai — sirf KOT add karo
         try {
           await axiosInstance.post(`/api/orders/${orderId}/kot`, { items: kotItems });
         } catch (kotErr: any) {
           if (kotErr.response?.status === 404) {
-            // Backend pe order nahi mila — fresh banao
             const sub = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
             const payload = {
               tableId: selectedTable, tableName: tableObj?.name ?? "",
@@ -447,13 +440,11 @@ export default function RestaurantPOS(): JSX.Element {
   };
 
   // ── Save Bill ─────────────────────────────────────────────────────────────
-  // ✅ FIX: Agar orderId pehle se hai toh PUT karo, naya order mat banao
   const saveBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
     try {
       const orderId = await ensureOrderId(selectedTable, currentOrder);
-      // Total update karo
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
       });
@@ -466,18 +457,15 @@ export default function RestaurantPOS(): JSX.Element {
   };
 
   // ── Print Bill ────────────────────────────────────────────────────────────
-  // ✅ FIX: Naya order NAHI banata — sirf existing update karta hai aur print karta hai
   const printBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
     try {
       const tableObj = tables.find((t) => t.id === selectedTable);
       const orderId  = await ensureOrderId(selectedTable, currentOrder);
-      // Total update karo
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
       });
-      // Sirf print karo
       setBillItemsToPrint(currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })));
       setBillInfo({ tableName: tableObj?.name ?? "", subtotal, discount: discAmt, total });
       setShouldPrintBillReceipt(true);
@@ -495,7 +483,6 @@ export default function RestaurantPOS(): JSX.Element {
     setShowPrintBill(true);
   };
 
-  // ✅ FIX: ensureOrderId use karta hai — duplicate order nahi banega
   const handlePrintBillConfirm = async (finalTotal: number, paymentMode: PaymentMode): Promise<void> => {
     setShowPrintBill(false);
     setSaving(true);
@@ -563,11 +550,31 @@ export default function RestaurantPOS(): JSX.Element {
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
 
-        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
-          <input value={selectedTableObj?.name ?? ""} readOnly placeholder="Table" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
-          <input placeholder="Captain" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
+        {/* ✅ UPDATED: Dark header — back arrow + Table + Captain */}
+        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a", minHeight: "44px" }}>
+          {/* ← Back arrow — same style as Menu Manager */}
+          <button
+            onClick={() => window.history.back()}
+            className="text-white font-bold rounded hover:bg-white/10 transition-colors flex items-center justify-center"
+            style={{ fontSize: "30px", width: "32px", height: "40px", lineHeight: 1 }}
+            title="Back"
+          >
+            ←
+          </button>
+          <input
+            value={selectedTableObj?.name ?? ""}
+            readOnly
+            placeholder="Table"
+            className="rounded px-2 py-1 text-sm outline-none text-gray-800"
+            style={{ width: "110px", height: "32px", background: "#fff" }}
+          />
+          <input
+            placeholder="Captain"
+            className="rounded px-2 py-1 text-sm outline-none text-gray-800"
+            style={{ width: "110px", height: "32px", background: "#fff" }}
+          />
           <div className="flex-1" />
-          <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ Table</button>
+          <button onClick={openAddTable} className="text-white text-xs px-4 py-2 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
 
         <div className="flex gap-3 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
@@ -628,31 +635,40 @@ export default function RestaurantPOS(): JSX.Element {
           )}
         </div>
 
-        {/* Bill Summary — No GST */}
-        <div className="px-3 py-2 border-t-2 border-gray-400 space-y-1" style={{ background: "#f0f0e8" }}>
-          <div className="flex justify-between text-xs text-gray-700"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-          <div className="flex items-center justify-between text-xs text-gray-700">
+        {/* ✅ UPDATED: Bill Summary — bigger font sizes */}
+        <div className="px-3 py-2.5 border-t-2 border-gray-400 space-y-2" style={{ background: "#f0f0e8" }}>
+          <div className="flex justify-between text-sm text-gray-700">
+            <span>Subtotal</span>
+            <span>₹{subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm text-gray-700">
             <span>Discount</span>
-            <div className="flex items-center gap-1">
-              <input type="number" min="0" max="100" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                className="w-10 text-xs border border-gray-400 rounded px-1 py-0.5 text-center outline-none" style={{ background: "#fff" }} />
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number" min="0" max="100" value={discount}
+                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                className="w-12 text-sm border border-gray-400 rounded px-1 py-0.5 text-center outline-none"
+                style={{ background: "#fff" }}
+              />
               <span>%</span>
-              <span className="text-red-600">-₹{discAmt.toFixed(2)}</span>
+              <span className="text-red-600 font-medium">-₹{discAmt.toFixed(2)}</span>
             </div>
           </div>
-          <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-400 pt-1">
-            <span>Total</span><span className="text-green-800">₹{total.toFixed(2)}</span>
+          <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-400 pt-2">
+            <span>Total</span>
+            <span className="text-green-800">₹{total.toFixed(2)}</span>
           </div>
         </div>
 
-        <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "44px", transition: "background .2s" }}>
-          <button className="text-white text-xs px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
+        {/* ✅ UPDATED: Bottom bar — bigger text & height */}
+        <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "50px", transition: "background .2s" }}>
+          <button className="text-white text-sm px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
             Last Bill ₹{lastBill.toFixed(2)}
           </button>
-          <div className="flex-1 flex items-center justify-center text-white text-xs font-bold">
+          <div className="flex-1 flex items-center justify-center text-white text-sm font-bold">
             {saving ? "⏳ Saving..." : `ITEMS : ${totalItems}`}
           </div>
-          <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold px-4 border-l border-green-700 hover:bg-green-700 disabled:opacity-50">
+          <button onClick={settleBill} disabled={saving} className="text-white text-base font-bold px-4 border-l border-green-700 hover:bg-green-700 disabled:opacity-50">
             PAY ₹{total.toFixed(2)} →
           </button>
         </div>
@@ -661,6 +677,7 @@ export default function RestaurantPOS(): JSX.Element {
       {/* ── RIGHT PANEL ── */}
       <div className={`flex flex-col overflow-hidden ${mobileView === "right" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
 
+        {/* Action Buttons */}
         <div className="grid gap-1.5 p-2" style={{ background: "#1a1a1a", gridTemplateColumns: "1fr 1fr 1fr" }}>
           <button onClick={printKOT} disabled={saving} className="relative text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
             🖨️ Print KOT
@@ -676,6 +693,7 @@ export default function RestaurantPOS(): JSX.Element {
           <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold py-2.5 rounded col-span-2 disabled:opacity-50" style={{ background: "#1a7a4a" }}>✅ Settle Bill</button>
         </div>
 
+        {/* Zone Filter Buttons */}
         <div className="flex gap-2 px-3 py-2 border-b-2 border-gray-400 flex-wrap" style={{ background: "#f0f0e8" }}>
           {ZONE_BTNS.map(({ val, label, cls }) => (
             <button key={val} onClick={() => setZone(val)}
@@ -685,6 +703,7 @@ export default function RestaurantPOS(): JSX.Element {
           ))}
         </div>
 
+        {/* Tables Grid */}
         <div className="flex-1 overflow-y-auto p-3">
           {loadingTables ? <Spinner /> : (
             <>
