@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, type JSX } from "react";
+import { useState, useMemo, useEffect, useRef, type JSX } from "react";
 import axiosInstance from "../Api/axiosInstance";
+import { getAllCaptains, type Captain } from "../Api/captainApi";
 
 const KOT_PRINT_STYLE = `
   @media print {
@@ -229,6 +230,13 @@ export default function RestaurantPOS(): JSX.Element {
   const [tables,        setTables]        = useState<TableItem[]>([]);
   const [menuItems,     setMenuItems]     = useState<MenuItem[]>([]);
 
+  // ── Captain state ──────────────────────────────────────────────────────────
+  const [captains,            setCaptains]            = useState<Captain[]>([]);
+  const [selectedCaptain,     setSelectedCaptain]     = useState<Captain | null>(null);
+  const [captainSearch,       setCaptainSearch]       = useState<string>("");
+  const [showCaptainDropdown, setShowCaptainDropdown] = useState<boolean>(false);
+  const captainWrapRef = useRef<HTMLDivElement>(null);
+
   const [orders, setOrders] = useState<OrderMap>(() => {
     try { const s = localStorage.getItem("pos_orders"); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
@@ -259,7 +267,36 @@ export default function RestaurantPOS(): JSX.Element {
   const [billInfo,               setBillInfo]               = useState<{ tableName: string; subtotal: number; discount: number; total: number } | null>(null);
   const [shouldPrintBillReceipt, setShouldPrintBillReceipt] = useState(false);
 
-  useEffect(() => { injectPrintStyle(); fetchMenuItems(); fetchTables(); }, []);
+  // ── Click outside captain dropdown ────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (captainWrapRef.current && !captainWrapRef.current.contains(e.target as Node)) {
+        setShowCaptainDropdown(false);
+        // If user typed but didn't select, restore selected captain name or clear
+        if (selectedCaptain) {
+          setCaptainSearch(selectedCaptain.name);
+        } else {
+          setCaptainSearch("");
+        }
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [selectedCaptain]);
+
+  // ── Sync captain search input when selectedCaptain changes ────────────────
+  useEffect(() => {
+    if (selectedCaptain) setCaptainSearch(selectedCaptain.name);
+    else setCaptainSearch("");
+  }, [selectedCaptain]);
+
+  useEffect(() => {
+    injectPrintStyle();
+    fetchMenuItems();
+    fetchTables();
+    getAllCaptains().then((all) => setCaptains(all.filter((c) => c.active)));
+  }, []);
+
   useEffect(() => { localStorage.setItem("pos_orders", JSON.stringify(orders)); }, [orders]);
   useEffect(() => { localStorage.setItem("pos_table_order_ids", JSON.stringify(tableOrderIds)); }, [tableOrderIds]);
 
@@ -332,7 +369,7 @@ export default function RestaurantPOS(): JSX.Element {
 
   const removeItem = (menuId: number): void => setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
 
-  // ── Bill Calculations — No GST ────────────────────────────────────────────
+  // ── Bill Calculations ─────────────────────────────────────────────────────
   const subtotal:   number = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
   const discAmt:    number = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
   const total:      number = subtotal - discAmt;
@@ -342,6 +379,18 @@ export default function RestaurantPOS(): JSX.Element {
   const filteredMenu: MenuItem[] = useMemo(
     () => menuItems.filter((m) => menuSearch && m.name.toLowerCase().includes(menuSearch.toLowerCase())),
     [menuItems, menuSearch]
+  );
+
+  // ── Filtered captains for dropdown ────────────────────────────────────────
+  const filteredCaptains: Captain[] = useMemo(
+    () => captains.filter(
+      (c) =>
+        c.active &&
+        (captainSearch === "" ||
+          c.name.toLowerCase().includes(captainSearch.toLowerCase()) ||
+          (c.phone ?? "").includes(captainSearch))
+    ),
+    [captains, captainSearch]
   );
 
   const filteredTables: TableItem[] = tables.filter((t) => zone === "all" || t.zone === zone);
@@ -358,6 +407,8 @@ export default function RestaurantPOS(): JSX.Element {
     const payload = {
       tableId,
       tableName:     tableObj?.name ?? "",
+      captainName:   selectedCaptain?.name ?? "",
+      captainId:     selectedCaptain?.id ?? null,
       items:         orderItems.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })),
       subtotal:      sub,
       discount:      disc,
@@ -390,6 +441,8 @@ export default function RestaurantPOS(): JSX.Element {
         const sub  = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
         const payload = {
           tableId: selectedTable, tableName: tableObj?.name ?? "",
+          captainName: selectedCaptain?.name ?? "",
+          captainId:   selectedCaptain?.id ?? null,
           items: kotItems, subtotal: sub, discount: 0, gst: 0,
           serviceCharge: 0, billCharge: 0, total: sub,
         };
@@ -404,6 +457,8 @@ export default function RestaurantPOS(): JSX.Element {
             const sub = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
             const payload = {
               tableId: selectedTable, tableName: tableObj?.name ?? "",
+              captainName: selectedCaptain?.name ?? "",
+              captainId:   selectedCaptain?.id ?? null,
               items: kotItems, subtotal: sub, discount: 0, gst: 0,
               serviceCharge: 0, billCharge: 0, total: sub,
             };
@@ -447,6 +502,8 @@ export default function RestaurantPOS(): JSX.Element {
       const orderId = await ensureOrderId(selectedTable, currentOrder);
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
       await axiosInstance.put(`/api/orders/${orderId}/save`);
       notify("💾 Bill Saved!");
@@ -465,6 +522,8 @@ export default function RestaurantPOS(): JSX.Element {
       const orderId  = await ensureOrderId(selectedTable, currentOrder);
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
       setBillItemsToPrint(currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })));
       setBillInfo({ tableName: tableObj?.name ?? "", subtotal, discount: discAmt, total });
@@ -490,12 +549,15 @@ export default function RestaurantPOS(): JSX.Element {
       const orderId = await ensureOrderId(selectedTable!, currentOrder);
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total: finalTotal,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
       await axiosInstance.put(`/api/orders/${orderId}/settle`, { paymentMode });
       setLastBill(Math.round(finalTotal));
       setOrders((prev)        => ({ ...prev, [selectedTable!]: [] }));
       setTableOrderIds((prev) => ({ ...prev, [selectedTable!]: null }));
       setDiscount(0);
+      setSelectedCaptain(null);
       notify(`✅ ₹${finalTotal.toFixed(0)} Settled via ${paymentMode}`);
     } catch (err: any) {
       console.error("❌ handlePrintBillConfirm:", err.response?.data, err.response?.status);
@@ -550,9 +612,8 @@ export default function RestaurantPOS(): JSX.Element {
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
 
-        {/* ✅ UPDATED: Dark header — back arrow + Table + Captain */}
+        {/* Header — Back arrow + Table + Captain inline search */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a", minHeight: "44px" }}>
-          {/* ← Back arrow — same style as Menu Manager */}
           <button
             onClick={() => window.history.back()}
             className="text-white font-bold rounded hover:bg-white/10 transition-colors flex items-center justify-center"
@@ -561,6 +622,8 @@ export default function RestaurantPOS(): JSX.Element {
           >
             ←
           </button>
+
+          {/* Table name (read-only) */}
           <input
             value={selectedTableObj?.name ?? ""}
             readOnly
@@ -568,11 +631,88 @@ export default function RestaurantPOS(): JSX.Element {
             className="rounded px-2 py-1 text-sm outline-none text-gray-800"
             style={{ width: "110px", height: "32px", background: "#fff" }}
           />
-          <input
-            placeholder="Captain"
-            className="rounded px-2 py-1 text-sm outline-none text-gray-800"
-            style={{ width: "110px", height: "32px", background: "#fff" }}
-          />
+
+          {/* ── Captain Inline Search (like menu search) ── */}
+          <div ref={captainWrapRef} className="relative" style={{ minWidth: "160px" }}>
+            <div className="flex items-center rounded overflow-hidden" style={{ height: "32px", background: "#fff", border: selectedCaptain ? "2px solid #10b981" : "1px solid #ccc" }}>
+              {/* Avatar or icon */}
+              <div className="flex items-center justify-center shrink-0" style={{ width: "28px" }}>
+                {selectedCaptain ? (
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
+                    {selectedCaptain.name.charAt(0).toUpperCase()}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 text-sm">👨‍🍳</span>
+                )}
+              </div>
+
+              <input
+                type="text"
+                placeholder="Captain..."
+                value={captainSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCaptainSearch(val);
+                  setSelectedCaptain(null);
+                  // Sirf tab dropdown khulo jab kuch type kiya ho
+                  setShowCaptainDropdown(val.length > 0);
+                }}
+                className="flex-1 text-xs outline-none text-gray-800 bg-transparent"
+                style={{ minWidth: 0, padding: "0 4px" }}
+              />
+
+              {/* Clear button — shows when captain selected */}
+              {selectedCaptain && (
+                <button
+                  onClick={() => { setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
+                  className="shrink-0 text-gray-400 hover:text-red-500 transition-colors px-1 text-xs"
+                  title="Clear captain"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown list */}
+            {showCaptainDropdown && (
+              <div
+                className="absolute left-0 z-50 bg-white rounded-lg shadow-xl overflow-y-auto"
+                style={{ top: "calc(100% + 2px)", width: "200px", maxHeight: "220px", border: "1px solid #e5e7eb" }}
+              >
+                {/* No Captain option */}
+                <button
+                  onMouseDown={(e) => { e.preventDefault(); setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors ${!selectedCaptain ? "bg-gray-50" : ""}`}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-bold shrink-0">—</div>
+                  <span className="text-gray-400 font-medium">No Captain</span>
+                  {!selectedCaptain && <span className="ml-auto text-emerald-600 text-[10px] font-bold">✓</span>}
+                </button>
+
+                {filteredCaptains.length === 0 && (
+                  <div className="text-center py-4 text-gray-400 text-[11px]">No captains found</div>
+                )}
+
+                {filteredCaptains.map((cap) => (
+                  <button
+                    key={cap.id}
+                    onMouseDown={(e) => { e.preventDefault(); setSelectedCaptain(cap); setCaptainSearch(cap.name); setShowCaptainDropdown(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 hover:bg-emerald-50 transition-colors text-left ${selectedCaptain?.id === cap.id ? "bg-emerald-50" : ""}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-[10px] font-bold shrink-0">
+                      {cap.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 truncate">{cap.name}</p>
+                      {cap.phone && <p className="text-[10px] text-gray-400">📞 {cap.phone}</p>}
+                    </div>
+                    {selectedCaptain?.id === cap.id && <span className="text-emerald-600 text-[10px] font-bold shrink-0">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex-1" />
           <button onClick={openAddTable} className="text-white text-xs px-4 py-2 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
@@ -635,7 +775,7 @@ export default function RestaurantPOS(): JSX.Element {
           )}
         </div>
 
-        {/* ✅ UPDATED: Bill Summary — bigger font sizes */}
+        {/* Bill Summary */}
         <div className="px-3 py-2.5 border-t-2 border-gray-400 space-y-2" style={{ background: "#f0f0e8" }}>
           <div className="flex justify-between text-sm text-gray-700">
             <span>Subtotal</span>
@@ -654,13 +794,19 @@ export default function RestaurantPOS(): JSX.Element {
               <span className="text-red-600 font-medium">-₹{discAmt.toFixed(2)}</span>
             </div>
           </div>
+          {selectedCaptain && (
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>👨‍🍳 Captain</span>
+              <span className="font-semibold text-gray-700">{selectedCaptain.name}</span>
+            </div>
+          )}
           <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-400 pt-2">
             <span>Total</span>
             <span className="text-green-800">₹{total.toFixed(2)}</span>
           </div>
         </div>
 
-        {/* ✅ UPDATED: Bottom bar — bigger text & height */}
+        {/* Bottom bar */}
         <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "50px", transition: "background .2s" }}>
           <button className="text-white text-sm px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
             Last Bill ₹{lastBill.toFixed(2)}
@@ -775,6 +921,11 @@ export default function RestaurantPOS(): JSX.Element {
           <div style={{ fontSize: "13px", marginBottom: "4px" }}>
             <b>Table:</b> {kotTableInfo?.name ?? ""} &nbsp;|&nbsp; <b>Zone:</b> {kotTableInfo?.zone ?? ""}
           </div>
+          {selectedCaptain && (
+            <div style={{ fontSize: "13px", marginBottom: "4px" }}>
+              <b>Captain:</b> {selectedCaptain.name}
+            </div>
+          )}
           <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "4px" }}>
             {new Date().toLocaleString("en-IN")}
           </div>
@@ -805,6 +956,12 @@ export default function RestaurantPOS(): JSX.Element {
           <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }} />
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>BILL RECEIPT</div>
           <div style={{ fontSize: "13px", marginBottom: "3px" }}><b>Table:</b> {billInfo.tableName}</div>
+          {selectedCaptain && (
+            <div style={{ fontSize: "13px", marginBottom: "3px" }}>
+              <b>Captain:</b> {selectedCaptain.name}
+              {/* {selectedCaptain.phone && <span style={{ marginLeft: "6px", color: "#555" }}>({selectedCaptain.phone})</span>} */}
+            </div>
+          )}
           <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "5px" }}>{new Date().toLocaleString("en-IN")}</div>
           <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
             <thead>

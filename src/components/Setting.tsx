@@ -6,6 +6,7 @@ import { getAllTables, addTable, updateTable, deleteTable } from "../Api/tableAp
 import { getRestaurantInfo, saveRestaurantInfo } from "../Api/restaurantApi";
 import { getAllTaxes, addTax, updateTax, deleteTax } from "../Api/taxApi";
 import { getAllHours, saveAllHours } from "../Api/hoursApi";
+import { getAllCaptains, addCaptain, updateCaptain, deleteCaptain, type Captain } from "../Api/captainApi";
 import { useLang, type Language } from "../context/languageContext";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -80,9 +81,7 @@ function LanguageSettings({ onSave }: OnSaveProps) {
           >
             <span className="text-2xl">{l.flag}</span>
             <div className="flex-1">
-              <p className={`font-bold text-sm ${lang === l.code ? "text-emerald-700" : "text-gray-700"}`}>
-                {l.native}
-              </p>
+              <p className={`font-bold text-sm ${lang === l.code ? "text-emerald-700" : "text-gray-700"}`}>{l.native}</p>
               <p className="text-xs text-gray-400">{l.label}</p>
             </div>
             {lang === l.code && (
@@ -316,9 +315,301 @@ function TableManagement({ onSave }: OnSaveProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 5. CAPTAIN MANAGEMENT — Add button at TOP
+// ═══════════════════════════════════════════════════════════════════════════════
+function CaptainManagement({ onSave }: OnSaveProps) {
+  const [captains, setCaptains] = useState<Captain[]>([]);
+  const [showAdd,  setShowAdd]  = useState(false);
+  const [newCap,   setNewCap]   = useState({ name: "", phone: "" });
+  const [newErrors, setNewErrors] = useState({ name: "", phone: "" });
+  const [editId,   setEditId]   = useState<number | null>(null);
+  const [editVal,  setEditVal]  = useState({ name: "", phone: "" });
+  const [editErrors, setEditErrors] = useState({ name: "", phone: "" });
+  const [loading,  setLoading]  = useState(false);
+
+  useEffect(() => {
+    getAllCaptains().then(setCaptains);
+  }, []);
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const validatePhone = (phone: string): string => {
+    if (!phone.trim()) return "Phone number is required";
+    if (!/^\d{10}$/.test(phone.trim())) return "Enter valid 10-digit mobile number";
+    return "";
+  };
+
+  const validateName = (name: string): string => {
+    if (!name.trim()) return "Captain name is required";
+    return "";
+  };
+
+  // ── ADD ───────────────────────────────────────────────────────────────────
+  const handleAdd = async () => {
+    const nameErr  = validateName(newCap.name);
+    const phoneErr = validatePhone(newCap.phone);
+    setNewErrors({ name: nameErr, phone: phoneErr });
+    if (nameErr || phoneErr) return;
+
+    setLoading(true);
+    try {
+      const added = await addCaptain({
+        name:   newCap.name.trim(),
+        phone:  newCap.phone.trim(),
+        active: true,
+      });
+      setCaptains((p) => [...p, added]);
+      setNewCap({ name: "", phone: "" });
+      setNewErrors({ name: "", phone: "" });
+      setShowAdd(false);
+      onSave("✅ Captain added!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── EDIT ──────────────────────────────────────────────────────────────────
+  const startEdit = (cap: Captain) => {
+    setEditId(cap.id);
+    setEditVal({ name: cap.name, phone: cap.phone ?? "" });
+    setEditErrors({ name: "", phone: "" });
+  };
+
+  const saveEdit = async (cap: Captain) => {
+    const nameErr  = validateName(editVal.name);
+    const phoneErr = validatePhone(editVal.phone);
+    setEditErrors({ name: nameErr, phone: phoneErr });
+    if (nameErr || phoneErr) return;
+
+    setLoading(true);
+    try {
+      const updated = await updateCaptain(cap.id, {
+        ...cap,
+        name:  editVal.name.trim(),
+        phone: editVal.phone.trim(),
+      });
+      setCaptains((p) => p.map((c) => (c.id === cap.id ? updated : c)));
+      setEditId(null);
+      onSave("✅ Captain updated!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── TOGGLE ACTIVE ─────────────────────────────────────────────────────────
+  const toggleActive = async (cap: Captain) => {
+    setLoading(true);
+    try {
+      const updated = await updateCaptain(cap.id, { ...cap, active: !cap.active });
+      setCaptains((p) => p.map((c) => (c.id === cap.id ? updated : c)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── DELETE ────────────────────────────────────────────────────────────────
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Is captain ko delete karna chahte ho?")) return;
+    setLoading(true);
+    try {
+      await deleteCaptain(id);
+      setCaptains((p) => p.filter((c) => c.id !== id));
+      onSave("🗑️ Captain deleted!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Section icon="👨‍🍳" title="Captain Management" subtitle="Add, edit or deactivate captains">
+      <div className="flex flex-col gap-3">
+
+        {/* ── ✅ Add New Captain Form — TOP ── */}
+        {showAdd ? (
+          <div className="p-4 rounded-xl border border-dashed border-emerald-300 bg-emerald-50 flex flex-col gap-2.5">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest">New Captain</p>
+
+            {/* Name */}
+            <div>
+              <input
+                className={`w-full border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${newErrors.name ? "border-red-400" : "border-gray-200"}`}
+                placeholder="Captain name *"
+                value={newCap.name}
+                onChange={(e) => { setNewCap({ ...newCap, name: e.target.value }); setNewErrors((p) => ({ ...p, name: "" })); }}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                autoFocus
+              />
+              {newErrors.name && <p className="text-red-500 text-[11px] mt-0.5">{newErrors.name}</p>}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <input
+                className={`w-full border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${newErrors.phone ? "border-red-400" : "border-gray-200"}`}
+                placeholder="Phone number (10 digits) *"
+                value={newCap.phone}
+                maxLength={10}
+                onChange={(e) => { setNewCap({ ...newCap, phone: e.target.value.replace(/\D/g, "") }); setNewErrors((p) => ({ ...p, phone: "" })); }}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              />
+              {newErrors.phone && <p className="text-red-500 text-[11px] mt-0.5">{newErrors.phone}</p>}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleAdd}
+                disabled={loading}
+                className="flex-1 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-all disabled:opacity-50"
+              >
+                {loading ? "Adding..." : "Add Captain"}
+              </button>
+              <button
+                onClick={() => { setShowAdd(false); setNewCap({ name: "", phone: "" }); setNewErrors({ name: "", phone: "" }); }}
+                className="px-3 py-1.5 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-white transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── Add Captain button — TOP ── */
+          <button
+            onClick={() => setShowAdd(true)}
+            className="py-3 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2 text-emerald-700 hover:text-emerald-800"
+          >
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-base font-bold leading-none">+</span>
+            <span className="text-sm font-bold">Add Captain</span>
+          </button>
+        )}
+
+        {/* ── Captain list below ── */}
+        {captains.map((cap) => (
+          <div
+            key={cap.id}
+            className={`relative rounded-xl border transition-all ${
+              cap.active
+                ? "border-gray-100 bg-white shadow-sm"
+                : "border-gray-100 bg-gray-50 opacity-60"
+            }`}
+          >
+            {editId === cap.id ? (
+              /* ── EDIT MODE ── */
+              <div className="p-4 flex flex-col gap-2">
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1">Edit Captain</p>
+
+                {/* Name */}
+                <div>
+                  <input
+                    className={`w-full border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${editErrors.name ? "border-red-400" : "border-gray-200"}`}
+                    placeholder="Captain name *"
+                    value={editVal.name}
+                    onChange={(e) => { setEditVal({ ...editVal, name: e.target.value }); setEditErrors((p) => ({ ...p, name: "" })); }}
+                    autoFocus
+                  />
+                  {editErrors.name && <p className="text-red-500 text-[11px] mt-0.5">{editErrors.name}</p>}
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <input
+                    className={`w-full border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${editErrors.phone ? "border-red-400" : "border-gray-200"}`}
+                    placeholder="Phone number (10 digits) *"
+                    value={editVal.phone}
+                    maxLength={10}
+                    onChange={(e) => { setEditVal({ ...editVal, phone: e.target.value.replace(/\D/g, "") }); setEditErrors((p) => ({ ...p, phone: "" })); }}
+                  />
+                  {editErrors.phone && <p className="text-red-500 text-[11px] mt-0.5">{editErrors.phone}</p>}
+                </div>
+
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={() => saveEdit(cap)}
+                    disabled={loading}
+                    className="flex-1 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-lg hover:bg-emerald-800 transition-all disabled:opacity-50"
+                  >
+                    {loading ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setEditId(null)}
+                    className="px-3 py-1.5 border border-gray-200 text-gray-500 text-xs font-medium rounded-lg hover:bg-white transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── VIEW MODE ── */
+              <div className="flex items-center gap-4 px-4 py-3.5">
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-base font-bold text-emerald-700 shrink-0">
+                  {cap.name.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-800 text-sm" style={{ fontFamily: "'Playfair Display',serif" }}>
+                    {cap.name}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cap.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>
+                      {cap.active ? "Active" : "Inactive"}
+                    </span>
+                    {cap.phone && (
+                      <span className="text-xs text-gray-400">📞 {cap.phone}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions: Edit | Toggle | Delete */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => startEdit(cap)}
+                    className="text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors"
+                  >
+                    ✏️ Edit
+                  </button>
+
+                  <button
+                    onClick={() => toggleActive(cap)}
+                    disabled={loading}
+                    className="relative rounded-full transition-colors disabled:opacity-50"
+                    style={{ width: 36, height: 20, background: cap.active ? "#059669" : "#d1d5db" }}
+                  >
+                    <span
+                      className="absolute top-0.5 bg-white rounded-full shadow transition-all"
+                      style={{ width: 16, height: 16, left: cap.active ? 18 : 2 }}
+                    />
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(cap.id)}
+                    className="text-gray-300 hover:text-red-400 transition-colors text-base leading-none"
+                    title="Delete"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Empty state */}
+        {captains.length === 0 && !showAdd && (
+          <div className="text-center py-10 text-gray-400">
+            <div className="text-4xl mb-3">👨‍🍳</div>
+            <p className="text-sm font-medium">No captains yet</p>
+            <p className="text-xs mt-1">Click "Add Captain" above to get started</p>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN SETTINGS PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
-type SectionKey = "restaurant" | "tax" | "hours" | "tables" | "language";
+type SectionKey = "restaurant" | "tax" | "hours" | "tables" | "language" | "captains";
 
 interface SectionNav { key: SectionKey; label: string; icon: string; }
 
@@ -333,7 +624,8 @@ export default function SettingsPage() {
     { key: "tax",        label: t("settings.tax"),            icon: "🧾" },
     { key: "hours",      label: t("settings.hours"),          icon: "🕐" },
     { key: "tables",     label: t("settings.tables"),         icon: "🪑" },
-    { key: "language",   label: t("settings.language"),       icon: "🌐" }, // ✅ New
+    { key: "language",   label: t("settings.language"),       icon: "🌐" },
+    { key: "captains",   label: "Captains",                   icon: "👨‍🍳" },
   ];
 
   const showToast = (msg: string) => {
@@ -352,11 +644,18 @@ export default function SettingsPage() {
       <div><Navbar variant="module" moduleName={t("settings.title")} /></div>
 
       <div className="flex h-[calc(100vh-76px)]">
+        {/* ── Sidebar ── */}
         <aside className="w-56 shrink-0 bg-white border-r border-gray-100 shadow-sm hidden sm:flex flex-col pt-4 gap-1 px-2 sticky top-20 h-[calc(100vh-76px)]">
           <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
             <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold px-3 mb-2">{t("settings.sections")}</p>
             {SECTIONS.map((s) => (
-              <button key={s.key} onClick={() => setActiveSection(s.key)} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${activeSection === s.key ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:bg-gray-50"}`}>
+              <button
+                key={s.key}
+                onClick={() => setActiveSection(s.key)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
+                  activeSection === s.key ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
                 <span className="text-base">{s.icon}</span>
                 {s.label}
                 {activeSection === s.key && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
@@ -369,20 +668,28 @@ export default function SettingsPage() {
         {/* Mobile tab bar */}
         <div className="sm:hidden w-full fixed bottom-0 left-0 z-40 bg-white border-t border-gray-100 flex">
           {SECTIONS.map((s) => (
-            <button key={s.key} onClick={() => setActiveSection(s.key)} className={`flex-1 flex flex-col items-center py-2 text-[10px] font-semibold transition-colors ${activeSection === s.key ? "text-emerald-700" : "text-gray-400"}`}>
+            <button
+              key={s.key}
+              onClick={() => setActiveSection(s.key)}
+              className={`flex-1 flex flex-col items-center py-2 text-[10px] font-semibold transition-colors ${
+                activeSection === s.key ? "text-emerald-700" : "text-gray-400"
+              }`}
+            >
               <span className="text-lg">{s.icon}</span>
               {s.label.split(" ")[0]}
             </button>
           ))}
         </div>
 
+        {/* ── Main Content ── */}
         <main className="flex-1 px-4 sm:px-8 py-6 pb-24 sm:pb-6 overflow-y-auto h-full" style={{ animation: "fadeIn .3s ease" }}>
           <div className="max-w-3xl" key={activeSection} style={{ animation: "fadeIn .25s ease" }}>
-            {activeSection === "restaurant" && <RestaurantInfo onSave={showToast} />}
-            {activeSection === "tax"        && <TaxSettings onSave={showToast} />}
-            {activeSection === "hours"      && <OperatingHours onSave={showToast} />}
-            {activeSection === "tables"     && <TableManagement onSave={showToast} />}
-            {activeSection === "language"   && <LanguageSettings onSave={showToast} />} {/* ✅ New */}
+            {activeSection === "restaurant" && <RestaurantInfo    onSave={showToast} />}
+            {activeSection === "tax"        && <TaxSettings       onSave={showToast} />}
+            {activeSection === "hours"      && <OperatingHours    onSave={showToast} />}
+            {activeSection === "tables"     && <TableManagement   onSave={showToast} />}
+            {activeSection === "language"   && <LanguageSettings  onSave={showToast} />}
+            {activeSection === "captains"   && <CaptainManagement onSave={showToast} />}
           </div>
         </main>
       </div>
