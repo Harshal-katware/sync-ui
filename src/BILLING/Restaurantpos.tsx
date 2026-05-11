@@ -230,7 +230,6 @@ export default function RestaurantPOS(): JSX.Element {
   const [tables,        setTables]        = useState<TableItem[]>([]);
   const [menuItems,     setMenuItems]     = useState<MenuItem[]>([]);
 
-  // ── Captain state ──────────────────────────────────────────────────────────
   const [captains,            setCaptains]            = useState<Captain[]>([]);
   const [selectedCaptain,     setSelectedCaptain]     = useState<Captain | null>(null);
   const [captainSearch,       setCaptainSearch]       = useState<string>("");
@@ -267,12 +266,10 @@ export default function RestaurantPOS(): JSX.Element {
   const [billInfo,               setBillInfo]               = useState<{ tableName: string; subtotal: number; discount: number; total: number } | null>(null);
   const [shouldPrintBillReceipt, setShouldPrintBillReceipt] = useState(false);
 
-  // ── Click outside captain dropdown ────────────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (captainWrapRef.current && !captainWrapRef.current.contains(e.target as Node)) {
         setShowCaptainDropdown(false);
-        // If user typed but didn't select, restore selected captain name or clear
         if (selectedCaptain) {
           setCaptainSearch(selectedCaptain.name);
         } else {
@@ -284,7 +281,6 @@ export default function RestaurantPOS(): JSX.Element {
     return () => document.removeEventListener("mousedown", handler);
   }, [selectedCaptain]);
 
-  // ── Sync captain search input when selectedCaptain changes ────────────────
   useEffect(() => {
     if (selectedCaptain) setCaptainSearch(selectedCaptain.name);
     else setCaptainSearch("");
@@ -369,7 +365,6 @@ export default function RestaurantPOS(): JSX.Element {
 
   const removeItem = (menuId: number): void => setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
 
-  // ── Bill Calculations ─────────────────────────────────────────────────────
   const subtotal:   number = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
   const discAmt:    number = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
   const total:      number = subtotal - discAmt;
@@ -381,7 +376,6 @@ export default function RestaurantPOS(): JSX.Element {
     [menuItems, menuSearch]
   );
 
-  // ── Filtered captains for dropdown ────────────────────────────────────────
   const filteredCaptains: Captain[] = useMemo(
     () => captains.filter(
       (c) =>
@@ -423,7 +417,6 @@ export default function RestaurantPOS(): JSX.Element {
     return newId;
   };
 
-  // ── Print KOT ─────────────────────────────────────────────────────────────
   const printKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     const snapshot = [...currentOrder];
@@ -480,7 +473,6 @@ export default function RestaurantPOS(): JSX.Element {
     } finally { setSaving(false); }
   };
 
-  // ── Save KOT ──────────────────────────────────────────────────────────────
   const saveKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
@@ -494,7 +486,6 @@ export default function RestaurantPOS(): JSX.Element {
     } finally { setSaving(false); }
   };
 
-  // ── Save Bill ─────────────────────────────────────────────────────────────
   const saveBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
@@ -513,7 +504,6 @@ export default function RestaurantPOS(): JSX.Element {
     } finally { setSaving(false); }
   };
 
-  // ── Print Bill ────────────────────────────────────────────────────────────
   const printBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
@@ -535,7 +525,6 @@ export default function RestaurantPOS(): JSX.Element {
     } finally { setSaving(false); }
   };
 
-  // ── Settle Bill ───────────────────────────────────────────────────────────
   const settleBill = (): void => {
     if (!selectedTable)       { notify("⚠️ Please select a table!"); return; }
     if (!currentOrder.length) { notify("⚠️ Order is empty!"); return; }
@@ -565,7 +554,6 @@ export default function RestaurantPOS(): JSX.Element {
     } finally { setSaving(false); }
   };
 
-  // ── Table CRUD ────────────────────────────────────────────────────────────
   const openAddTable = (): void => { setForm({ name: "", zone: "HALL" }); setModal("addTable"); };
   const tableForm = form as TableFormState;
 
@@ -612,7 +600,7 @@ export default function RestaurantPOS(): JSX.Element {
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
 
-        {/* Header — Back arrow + Table + Captain inline search */}
+        {/* Header */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a", minHeight: "44px" }}>
           <button
             onClick={() => window.history.back()}
@@ -623,7 +611,6 @@ export default function RestaurantPOS(): JSX.Element {
             ←
           </button>
 
-          {/* Table name (read-only) */}
           <input
             value={selectedTableObj?.name ?? ""}
             readOnly
@@ -632,10 +619,8 @@ export default function RestaurantPOS(): JSX.Element {
             style={{ width: "110px", height: "32px", background: "#fff" }}
           />
 
-          {/* ── Captain Inline Search (like menu search) ── */}
           <div ref={captainWrapRef} className="relative" style={{ minWidth: "160px" }}>
             <div className="flex items-center rounded overflow-hidden" style={{ height: "32px", background: "#fff", border: selectedCaptain ? "2px solid #10b981" : "1px solid #ccc" }}>
-              {/* Avatar or icon */}
               <div className="flex items-center justify-center shrink-0" style={{ width: "28px" }}>
                 {selectedCaptain ? (
                   <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
@@ -654,14 +639,12 @@ export default function RestaurantPOS(): JSX.Element {
                   const val = e.target.value;
                   setCaptainSearch(val);
                   setSelectedCaptain(null);
-                  // Sirf tab dropdown khulo jab kuch type kiya ho
                   setShowCaptainDropdown(val.length > 0);
                 }}
                 className="flex-1 text-xs outline-none text-gray-800 bg-transparent"
                 style={{ minWidth: 0, padding: "0 4px" }}
               />
 
-              {/* Clear button — shows when captain selected */}
               {selectedCaptain && (
                 <button
                   onClick={() => { setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
@@ -673,13 +656,11 @@ export default function RestaurantPOS(): JSX.Element {
               )}
             </div>
 
-            {/* Dropdown list */}
             {showCaptainDropdown && (
               <div
                 className="absolute left-0 z-50 bg-white rounded-lg shadow-xl overflow-y-auto"
                 style={{ top: "calc(100% + 2px)", width: "200px", maxHeight: "220px", border: "1px solid #e5e7eb" }}
               >
-                {/* No Captain option */}
                 <button
                   onMouseDown={(e) => { e.preventDefault(); setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors ${!selectedCaptain ? "bg-gray-50" : ""}`}
@@ -913,7 +894,7 @@ export default function RestaurantPOS(): JSX.Element {
 
       {toast && <Toast msg={toast} />}
 
-      {/* KOT Print Area */}
+      {/* ── KOT Print Area ── */}
       {kotItemsToPrint.length > 0 && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "18px", marginBottom: "2px", letterSpacing: "1px" }}>PATIL DHABHA</div>
@@ -949,20 +930,32 @@ export default function RestaurantPOS(): JSX.Element {
         </div>
       )}
 
-      {/* Bill Receipt Print Area */}
+      {/* ── Bill Receipt Print Area ── */}
       {billItemsToPrint.length > 0 && billInfo && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+
+          {/* Header */}
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "20px", letterSpacing: "1px", marginBottom: "2px" }}>PATIL DHABHA</div>
-          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }} />
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "2px" }}>Old PB Road NH-48, Opp. Aequs - Hattargi</div>
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }}>📞 9000000000</div>
+
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>BILL RECEIPT</div>
+
+          {/* PICK UP banner — only for PARCEL zone */}
+          {selectedTableObj?.zone === "PARCEL" && (
+            <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "16px", background: "#000", color: "#fff", padding: "4px", marginBottom: "6px", letterSpacing: "2px" }}>
+              🛵 PICK UP
+            </div>
+          )}
+
           <div style={{ fontSize: "13px", marginBottom: "3px" }}><b>Table:</b> {billInfo.tableName}</div>
           {selectedCaptain && (
             <div style={{ fontSize: "13px", marginBottom: "3px" }}>
               <b>Captain:</b> {selectedCaptain.name}
-              {/* {selectedCaptain.phone && <span style={{ marginLeft: "6px", color: "#555" }}>({selectedCaptain.phone})</span>} */}
             </div>
           )}
           <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "5px" }}>{new Date().toLocaleString("en-IN")}</div>
+
           <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px dashed #000" }}>
@@ -981,6 +974,7 @@ export default function RestaurantPOS(): JSX.Element {
               ))}
             </tbody>
           </table>
+
           <div style={{ borderTop: "1px dashed #000", marginTop: "8px", paddingTop: "8px", fontSize: "14px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
               <span>Subtotal</span><span>₹{billInfo.subtotal.toFixed(2)}</span>
@@ -994,9 +988,11 @@ export default function RestaurantPOS(): JSX.Element {
               <span>TOTAL</span><span>₹{billInfo.total.toFixed(2)}</span>
             </div>
           </div>
+
           <div style={{ textAlign: "center", marginTop: "14px", fontSize: "13px" }}>Thank you! Visit Again 🙏</div>
         </div>
       )}
+
     </div>
   );
 }
