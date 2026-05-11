@@ -23,7 +23,7 @@ const KOT_PRINT_STYLE = `
     }
   }
 `;
-
+ 
 function injectPrintStyle(): void {
   if (document.getElementById("kot-print-style")) return;
   const tag = document.createElement("style");
@@ -31,13 +31,12 @@ function injectPrintStyle(): void {
   tag.innerHTML = KOT_PRINT_STYLE;
   document.head.appendChild(tag);
 }
-
 type Category    = "veg" | "nonveg" | "drink";
 type Zone        = "HALL" | "FAMILY" | "PARCEL";
 type PaymentMode = "CASH" | "CARD" | "UPI" | "ONLINE";
 type ModalType   = "addTable" | null;
 type MobileView  = "left" | "right";
-
+ 
 interface MenuItem {
   id:       number;
   name:     string;
@@ -45,13 +44,13 @@ interface MenuItem {
   category: Category;
   emoji:    string;
 }
-
+ 
 interface TableItem {
   id:   number;
   name: string;
   zone: Zone;
 }
-
+ 
 interface OrderItem {
   menuId:  number;
   name:    string;
@@ -60,35 +59,34 @@ interface OrderItem {
   emoji:   string;
   sentQty: number;
 }
-
+ 
 interface OrderMap {
   [tableId: number]: OrderItem[];
 }
-
+ 
 interface TableOrderIdMap {
   [tableId: number]: number | null;
 }
-
+ 
 interface TableFormState {
   name: string;
   zone: Zone;
 }
-
+ 
 type FormState = TableFormState | Record<string, never>;
-
+ 
 interface ZoneButton {
   val:   "all" | Zone;
   label: string;
   cls:   string;
 }
-
+ 
 const ZONE_BTNS: ZoneButton[] = [
   { val: "all",    label: "All",          cls: "bg-orange-600 text-white" },
   { val: "HALL",   label: "HALL",         cls: "bg-green-800 text-white"  },
   { val: "FAMILY", label: "FAMILY",       cls: "bg-yellow-700 text-white" },
   { val: "PARCEL", label: "PARCEL ORDER", cls: "bg-blue-800 text-white"   },
 ];
-
 function Toast({ msg }: { msg: string }): JSX.Element {
   return (
     <div className="fixed bottom-16 right-4 z-50 text-white font-bold text-base px-6 py-4 rounded-xl shadow-2xl"
@@ -97,7 +95,7 @@ function Toast({ msg }: { msg: string }): JSX.Element {
     </div>
   );
 }
-
+ 
 function Spinner(): JSX.Element {
   return (
     <div className="flex items-center justify-center h-full py-10 text-gray-400 text-xs">
@@ -105,7 +103,6 @@ function Spinner(): JSX.Element {
     </div>
   );
 }
-
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }): JSX.Element {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -119,14 +116,12 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
     </div>
   );
 }
-
 interface PrintBillModalProps {
   subtotal:  number;
   total:     number;
   onClose:   () => void;
   onConfirm: (finalTotal: number, paymentMode: PaymentMode) => void;
 }
-
 function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalProps): JSX.Element {
   const [paymentMode,      setPaymentMode]      = useState<PaymentMode>("CASH");
   const [discountAmt,      setDiscountAmt]      = useState<number>(0);
@@ -134,12 +129,12 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
   const [billCharge,       setBillCharge]       = useState<number>(0);
   const [serviceChargePer, setServiceChargePer] = useState<number>(0);
   const [tenderCash,       setTenderCash]       = useState<number>(0);
-
+ 
   const serviceChargeAmt = (subtotal * serviceChargePer) / 100;
   const effectiveDisc    = discountAmt > 0 ? discountAmt : (subtotal * discountPer) / 100;
   const finalTotal       = total - effectiveDisc + serviceChargeAmt + billCharge;
   const returnCash       = Math.max(0, tenderCash - finalTotal);
-
+ 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden" style={{ fontFamily: "Arial, sans-serif" }}>
@@ -147,7 +142,7 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
           <span className="text-white text-sm font-bold">✅ ("bill.settleBill")</span>
           <button onClick={onClose} className="text-white text-xl leading-none hover:text-red-400">×</button>
         </div>
-
+ 
         <div className="p-4 space-y-3 overflow-y-auto" style={{ maxHeight: "82vh" }}>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">Payment Mode :</span>
@@ -158,7 +153,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </select>
             </div>
           </div>
-
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Discount Amt",         sym: "₹", val: discountAmt, set: (v: number) => { setDiscountAmt(v); setDiscountPer(0); }, reset: () => setDiscountAmt(0) },
@@ -175,7 +169,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </div>
             ))}
           </div>
-
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Service Charge Per</p>
@@ -193,7 +186,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </div>
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-2 items-end">
             <div>
               <p className="text-[11px] text-gray-600 mb-1">Tender Cash</p>
@@ -215,7 +207,7 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
             <div className="flex justify-between text-xs text-gray-700"><span>Service Charge Amt.</span><span>{serviceChargeAmt.toFixed(2)}</span></div>
             <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-300 pt-1.5"><span>Final Total</span><span>₹ {finalTotal.toFixed(2)}</span></div>
           </div>
-
+ 
           <button onClick={() => onConfirm(finalTotal, paymentMode)} className="w-full py-2.5 text-white font-bold text-sm rounded" style={{ background: "#1a7a4a" }}>
             ✅ Confirm & Settle  ₹{finalTotal.toFixed(2)}
           </button>
@@ -230,15 +222,15 @@ export default function RestaurantPOS(): JSX.Element {
 
   const [tables,        setTables]        = useState<TableItem[]>([]);
   const [menuItems,     setMenuItems]     = useState<MenuItem[]>([]);
-
+ 
   const [orders, setOrders] = useState<OrderMap>(() => {
     try { const s = localStorage.getItem("pos_orders"); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
-
+ 
   const [tableOrderIds, setTableOrderIds] = useState<TableOrderIdMap>(() => {
     try { const s = localStorage.getItem("pos_table_order_ids"); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
-
+ 
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
   const [zone,          setZone]          = useState<"all" | Zone>("all");
   const [menuSearch,    setMenuSearch]    = useState<string>("");
@@ -274,7 +266,6 @@ export default function RestaurantPOS(): JSX.Element {
       }));
     }
   }, [shouldPrint, kotItemsToPrint]);
-
   useEffect(() => {
     if (shouldPrintBillReceipt && billItemsToPrint.length > 0) {
       setShouldPrintBillReceipt(false);
@@ -284,7 +275,6 @@ export default function RestaurantPOS(): JSX.Element {
       }));
     }
   }, [shouldPrintBillReceipt, billItemsToPrint]);
-
   const fetchMenuItems = async () => {
     setLoadingMenu(true);
     try {
@@ -295,7 +285,7 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to load menu!");
     } finally { setLoadingMenu(false); }
   };
-
+ 
   const fetchTables = async () => {
     setLoadingTables(true);
     try {
@@ -314,7 +304,6 @@ export default function RestaurantPOS(): JSX.Element {
     if (!selectedTable) return;
     setOrders((prev) => ({ ...prev, [selectedTable]: arr }));
   };
-
   const addToOrder = (menuId: number): void => {
     if (!selectedTable) { notify("⚠️ Please select a table first!"); return; }
     const m = menuItems.find((x) => x.id === menuId);
@@ -325,7 +314,7 @@ export default function RestaurantPOS(): JSX.Element {
     else { setCurrentOrder([...ord, { menuId, name: m.name, price: m.price, qty: 1, emoji: m.emoji, sentQty: 0 }]); }
     setMenuSearch("");
   };
-
+ 
   const setQty = (menuId: number, val: string): void => {
     const parsed = parseInt(val, 10);
     if (isNaN(parsed) || parsed < 1) return;
@@ -340,13 +329,12 @@ export default function RestaurantPOS(): JSX.Element {
   const total:      number = subtotal - discAmt;
   const totalItems: number = currentOrder.reduce((s, i) => s + i.qty, 0);
   const unsentItems        = currentOrder.filter((i) => i.qty > i.sentQty);
-
   const filteredMenu: MenuItem[] = useMemo(
     () => menuItems.filter((m) => menuSearch && m.name.toLowerCase().includes(menuSearch.toLowerCase())),
     [menuItems, menuSearch]
   );
+ 
   const filteredTables: TableItem[] = tables.filter((t) => zone === "all" || t.zone === zone);
-
   // ── KEY FIX: ensureOrderId ────────────────────────────────────────────────
   // Agar order pehle se exist karta hai toh wahi return karo
   // Naya order tabhi banao jab pehle se koi orderId nahi hai
@@ -354,12 +342,10 @@ export default function RestaurantPOS(): JSX.Element {
   const ensureOrderId = async (tableId: number, orderItems: OrderItem[]): Promise<number> => {
     const existing = tableOrderIds[tableId] ?? null;
     if (existing) return existing;
-
     const tableObj = tables.find((t) => t.id === tableId);
     const sub      = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
     const disc     = sub * (Math.min(100, Math.max(0, discount)) / 100);
     const tot      = sub - disc;
-
     const payload = {
       tableId,
       tableName:     tableObj?.name ?? "",
@@ -376,7 +362,6 @@ export default function RestaurantPOS(): JSX.Element {
     setTableOrderIds((prev) => ({ ...prev, [tableId]: newId }));
     return newId;
   };
-
   // ── Print KOT ─────────────────────────────────────────────────────────────
   const printKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
@@ -390,7 +375,6 @@ export default function RestaurantPOS(): JSX.Element {
     try {
       const tableObj = tables.find((t) => t.id === selectedTable);
       let orderId    = tableOrderIds[selectedTable] ?? null;
-
       if (!orderId) {
         // Pehla KOT — naya order banao sirf KOT items se
         const sub  = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
@@ -421,7 +405,7 @@ export default function RestaurantPOS(): JSX.Element {
           } else { throw kotErr; }
         }
       }
-
+ 
       setKotItemsToPrint(kotItems);
       setKotTableInfo({ name: tableObj?.name ?? "", zone: tableObj?.zone ?? "" });
       setOrders((prev) => ({ ...prev, [selectedTable!]: snapshot.map((i) => ({ ...i, sentQty: i.qty })) }));
@@ -432,7 +416,6 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to print KOT!");
     } finally { setSaving(false); }
   };
-
   // ── Save KOT ──────────────────────────────────────────────────────────────
   const saveKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
@@ -446,7 +429,6 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to save KOT!");
     } finally { setSaving(false); }
   };
-
   // ── Save Bill ─────────────────────────────────────────────────────────────
   // ✅ FIX: Agar orderId pehle se hai toh PUT karo, naya order mat banao
   const saveBill = async (): Promise<void> => {
@@ -465,7 +447,6 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to save bill!");
     } finally { setSaving(false); }
   };
-
   // ── Print Bill ────────────────────────────────────────────────────────────
   // ✅ FIX: Naya order NAHI banata — sirf existing update karta hai aur print karta hai
   const printBill = async (): Promise<void> => {
@@ -488,14 +469,12 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to print bill!");
     } finally { setSaving(false); }
   };
-
   // ── Settle Bill ───────────────────────────────────────────────────────────
   const settleBill = (): void => {
     if (!selectedTable)       { notify("⚠️ Please select a table!"); return; }
     if (!currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setShowPrintBill(true);
   };
-
   // ✅ FIX: ensureOrderId use karta hai — duplicate order nahi banega
   const handlePrintBillConfirm = async (finalTotal: number, paymentMode: PaymentMode): Promise<void> => {
     setShowPrintBill(false);
@@ -516,11 +495,10 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to settle bill!");
     } finally { setSaving(false); }
   };
-
   // ── Table CRUD ────────────────────────────────────────────────────────────
   const openAddTable = (): void => { setForm({ name: "", zone: "HALL" }); setModal("addTable"); };
   const tableForm = form as TableFormState;
-
+ 
   const handleAddTable = async (): Promise<void> => {
     if (!tableForm.name?.trim()) { notify("⚠️ Please enter table name!"); return; }
     setSaving(true);
@@ -534,14 +512,14 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to add table!");
     } finally { setSaving(false); }
   };
-
+ 
   const handleDeleteTable = async (id: number): Promise<void> => {
     setSaving(true);
     try {
       await axiosInstance.delete(`/api/tables/${id}`);
       setTables((prev) => prev.filter((t) => t.id !== id));
       if (selectedTable === id) setSelectedTable(null);
-      setOrders((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      setOrders((prev)        => { const n = { ...prev }; delete n[id]; return n; });
       setTableOrderIds((prev) => { const n = { ...prev }; delete n[id]; return n; });
       notify("🗑️ Table deleted!");
     } catch (err: any) {
@@ -549,40 +527,35 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to delete table!");
     } finally { setSaving(false); }
   };
-
+ 
   const selectedTableObj = tables.find((t) => t.id === selectedTable);
-
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ fontFamily: "Arial, sans-serif", background: "#f0f0e8", fontSize: "13px" }}>
-
+ 
       {/* Mobile Tab Switcher */}
       <div className="flex md:hidden border-b-2 border-gray-400" style={{ background: "#1a1a1a" }}>
-        <button onClick={() => setMobileView("left")} className={`flex-1 py-2 text-xs font-bold transition-colors ${mobileView === "left" ? "bg-green-700 text-white" : "text-gray-400"}`}>🧾 Order</button>
+        <button onClick={() => setMobileView("left")}  className={`flex-1 py-2 text-xs font-bold transition-colors ${mobileView === "left"  ? "bg-green-700 text-white" : "text-gray-400"}`}>🧾 Order</button>
         <button onClick={() => setMobileView("right")} className={`flex-1 py-2 text-xs font-bold transition-colors ${mobileView === "right" ? "bg-green-700 text-white" : "text-gray-400"}`}>🪑 Tables</button>
       </div>
-
+ 
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
-
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
           <input value={selectedTableObj?.name ?? ""} readOnly placeholder="Table" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <input placeholder="Captain" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
           <div className="flex-1" />
-          <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ {t("bill.table")}</button>
+          <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
-
         <div className="flex gap-3 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
           <input type="text" placeholder="Search by Code/Barcode/Name" value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)}
             className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "#fff" }} />
           <button className="text-white px-3 rounded text-sm" style={{ background: "#cc2222" }}>🔍</button>
         </div>
-
         <div className="grid gap-1 px-2 pb-1" style={{ gridTemplateColumns: "1fr 80px 70px" }}>
-          {[t("bill.itemName"), t("bill.qtyPrice"), t("bill.total")].map((h) => (
+          {["Item Name", "Qty · Price", "Total"].map((h) => (
             <div key={h} className="border border-gray-400 rounded text-center py-1 text-xs text-gray-600" style={{ background: "#fff" }}>{h}</div>
           ))}
         </div>
-
         <div className="flex-1 overflow-y-auto px-2 pb-1 space-y-0.5">
           {loadingMenu ? <Spinner /> : menuSearch ? (
             filteredMenu.length === 0 ? (
@@ -601,7 +574,7 @@ export default function RestaurantPOS(): JSX.Element {
               ))
             )
           ) : currentOrder.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-xs">{t("bill.noOrder")}</div>
+            <div className="text-center py-10 text-gray-400 text-xs">No order · Search and add items</div>
           ) : (
             currentOrder.map((item) => {
               const isNewItem = item.sentQty === 0;
@@ -628,12 +601,11 @@ export default function RestaurantPOS(): JSX.Element {
             })
           )}
         </div>
-
         {/* Bill Summary — No GST */}
         <div className="px-3 py-2 border-t-2 border-gray-400 space-y-1" style={{ background: "#f0f0e8" }}>
-          <div className="flex justify-between text-xs text-gray-700"><span>{t("bill.subtotal")}</span><span>₹{subtotal.toFixed(2)}</span></div>
+          <div className="flex justify-between text-xs text-gray-700"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
           <div className="flex items-center justify-between text-xs text-gray-700">
-            <span>{t("bill.discount")}</span>
+            <span>Discount</span>
             <div className="flex items-center gap-1">
               <input type="number" min="0" max="100" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                 className="w-10 text-xs border border-gray-400 rounded px-1 py-0.5 text-center outline-none" style={{ background: "#fff" }} />
@@ -642,41 +614,38 @@ export default function RestaurantPOS(): JSX.Element {
             </div>
           </div>
           <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-400 pt-1">
-            <span>{t("bill.total")}</span><span className="text-green-800">₹{total.toFixed(2)}</span>
+            <span>Total</span><span className="text-green-800">₹{total.toFixed(2)}</span>
           </div>
         </div>
-
         <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "44px", transition: "background .2s" }}>
           <button className="text-white text-xs px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
-            {t("bill.lastBill")} ₹{lastBill.toFixed(2)}
+            Last Bill ₹{lastBill.toFixed(2)}
           </button>
           <div className="flex-1 flex items-center justify-center text-white text-xs font-bold">
-            {saving ? `⏳ ${t("bill.loading")}` : `${t("bill.items")} : ${totalItems}`}
+            {saving ? "⏳ Saving..." : `ITEMS : ${totalItems}`}
           </div>
           <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold px-4 border-l border-green-700 hover:bg-green-700 disabled:opacity-50">
             PAY ₹{total.toFixed(2)} →
           </button>
         </div>
       </div>
-
+ 
       {/* ── RIGHT PANEL ── */}
       <div className={`flex flex-col overflow-hidden ${mobileView === "right" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
-
         <div className="grid gap-1.5 p-2" style={{ background: "#1a1a1a", gridTemplateColumns: "1fr 1fr 1fr" }}>
           <button onClick={printKOT} disabled={saving} className="relative text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
-            🖨️ {t("bill.printKot")}
+            🖨️ Print KOT
             {unsentItems.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                 {unsentItems.length}
               </span>
             )}
           </button>
-          <button onClick={saveBill}   disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>💾 {t("bill.saveBill")}</button>
-          <button onClick={printBill}  disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#6633aa" }}>🖨️ {t("bill.printBill")}</button>
-          <button onClick={saveKOT}    disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>💾 {t("bill.saveKot")}</button>
-          <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold py-2.5 rounded col-span-2 disabled:opacity-50" style={{ background: "#1a7a4a" }}>✅ {t("bill.settleBill")}</button>
+          <button onClick={saveBill}  disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>💾 Save Bill</button>
+          <button onClick={printBill} disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#6633aa" }}>🖨️ Print Bill</button>
+          <button onClick={saveKOT}   disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>💾 Save KOT</button>
+          <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold py-2.5 rounded col-span-2 disabled:opacity-50" style={{ background: "#1a7a4a" }}>✅ Settle Bill</button>
         </div>
-
         <div className="flex gap-2 px-3 py-2 border-b-2 border-gray-400 flex-wrap" style={{ background: "#f0f0e8" }}>
           {ZONE_BTNS.map(({ val, label, cls }) => (
             <button key={val} onClick={() => setZone(val)}
@@ -685,7 +654,6 @@ export default function RestaurantPOS(): JSX.Element {
             </button>
           ))}
         </div>
-
         <div className="flex-1 overflow-y-auto p-3">
           {loadingTables ? <Spinner /> : (
             <>
@@ -714,41 +682,41 @@ export default function RestaurantPOS(): JSX.Element {
               {filteredTables.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                   <span className="text-2xl mb-2">🪑</span>
-                  <p className="text-xs">{t("bill.noTables")}</p>
+                  <p className="text-xs">No tables in this zone</p>
                 </div>
               )}
             </>
           )}
         </div>
       </div>
-
+ 
       {/* ── MODALS ── */}
       {modal === "addTable" && (
-        <Modal title={t("bill.addTable")} onClose={() => setModal(null)}>
-          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder={t("bill.tableName")}
+        <Modal title="Add New Table" onClose={() => setModal(null)}>
+          <input className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-2 outline-none" placeholder="Table name"
             value={tableForm.name ?? ""} onChange={(e) => setForm({ ...tableForm, name: e.target.value })} />
           <select className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm mb-3 outline-none bg-white"
             value={tableForm.zone ?? "HALL"} onChange={(e) => setForm({ ...tableForm, zone: e.target.value as Zone })}>
-            <option value="HALL">{t("bill.hall")}</option>
-            <option value="FAMILY">{t("bill.family")}</option>
-            <option value="PARCEL">{t("bill.parcel")}</option>
+            <option value="HALL">Hall</option>
+            <option value="FAMILY">Family</option>
+            <option value="PARCEL">Parcel</option>
           </select>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(null)} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">{t("bill.cancel")}</button>
+            <button onClick={() => setModal(null)} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
             <button onClick={handleAddTable} disabled={saving} className="px-3 py-1.5 text-sm text-white rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
-              {saving ? t("bill.adding") : t("bill.add")}
+              {saving ? "Adding..." : "Add"}
             </button>
           </div>
         </Modal>
       )}
-
+ 
       {showPrintBill && (
         <PrintBillModal subtotal={subtotal} total={total}
           onClose={() => setShowPrintBill(false)} onConfirm={handlePrintBillConfirm} />
       )}
-
+ 
       {toast && <Toast msg={toast} />}
-
+ 
       {/* KOT Print Area */}
       {kotItemsToPrint.length > 0 && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
@@ -763,7 +731,7 @@ export default function RestaurantPOS(): JSX.Element {
           <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px dashed #000" }}>
-                <th style={{ textAlign: "left", paddingBottom: "4px" }}>{t("bill.itemName")}</th>
+                <th style={{ textAlign: "left", paddingBottom: "4px" }}>Item</th>
                 <th style={{ textAlign: "center", paddingBottom: "4px" }}>Qty</th>
               </tr>
             </thead>
@@ -779,7 +747,6 @@ export default function RestaurantPOS(): JSX.Element {
           <div style={{ textAlign: "center", marginTop: "12px", fontSize: "12px", borderTop: "1px dashed #000", paddingTop: "6px" }}>** KOT END **</div>
         </div>
       )}
-
       {/* Bill Receipt Print Area */}
       {billItemsToPrint.length > 0 && billInfo && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>

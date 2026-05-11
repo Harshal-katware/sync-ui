@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar.js";
 import type { JSX } from "react";
 import restroImage from "../assets/restro4.jpg";
 import { useLang } from "../context/languageContext";
+import { getRestaurantInfo } from "../Api/restaurantApi"; // ✅
 
 interface NavCard {
   title: string;
@@ -13,14 +14,22 @@ interface NavCard {
 }
 
 export default function Dashboard(): JSX.Element {
-  const { t, lang } = useLang(); // ✅ lang bhi lo taaki clock locale sahi ho
+  const { t, lang } = useLang();
   const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
+  const [restaurantName, setRestaurantName] = useState<string>(""); // ✅
 
   // Live clock
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // ✅ Restaurant name DB se fetch karo
+  useEffect(() => {
+    getRestaurantInfo()
+      .then((data) => { if (data?.name) setRestaurantName(data.name); })
+      .catch(() => {}); // fail hone pe default rahega
   }, []);
 
   // Username from storage
@@ -29,7 +38,6 @@ export default function Dashboard(): JSX.Element {
     sessionStorage.getItem("userName") ||
     "Admin";
 
-  // ✅ Greeting — language ke hisaab se
   const greeting = () => {
     const h = time.getHours();
     if (h < 12) return t("dash.morning");
@@ -37,10 +45,8 @@ export default function Dashboard(): JSX.Element {
     return t("dash.evening");
   };
 
-  // ✅ Clock locale — language ke hisaab se
-  const clockLocale = lang === "en" ? "en-IN" : lang === "hi" ? "hi-IN" : "mr-IN";
+  const clockLocale = lang === "en" ? "en-IN" : "hi-IN";
 
-  // ✅ Nav cards — translated
   const navCards: NavCard[] = [
     { title: t("dash.billing"),   desc: t("dash.billingDesc"),   icon: "🧾", path: "/billing" },
     { title: t("dash.menu"),      desc: t("dash.menuDesc"),      icon: "🍽️", path: "/menu" },
@@ -50,33 +56,27 @@ export default function Dashboard(): JSX.Element {
 
   return (
     <div className="min-h-screen relative">
-      {/* Background */}
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${restroImage})` }} />
-
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/10" />
 
-      {/* Content */}
       <div className="relative z-10">
         <div className="relative z-50">
-          <Navbar variant="dashboard" />
+          <Navbar variant="dashboard" restaurantName={restaurantName} /> {/* ✅ naam pass karo */}
         </div>
 
-        {/* Main Content */}
         <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
 
-          {/* Heading with greeting + live clock */}
+          {/* Heading */}
           <div className="mb-6 sm:mb-8 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
               <p className="text-emerald-400 text-sm font-semibold tracking-widest uppercase mb-1">
-                {greeting()}, {userName} 👋
+                {greeting()}, {userName} 
               </p>
+              {/* ✅ Restaurant name DB se, fallback t() */}
               <h1 className="text-2xl sm:text-3xl font-bold">
-                {t("dash.title")}
+                {restaurantName ? `${restaurantName}` : t("dash.title")}
               </h1>
-              <p className="text-sm sm:text-base opacity-80">
-                {t("dash.subtitle")}
-              </p>
+              <p className="text-sm sm:text-base opacity-80">{t("dash.subtitle")}</p>
             </div>
 
             {/* Live clock */}
@@ -86,7 +86,7 @@ export default function Dashboard(): JSX.Element {
                 <p className="text-white font-semibold text-lg leading-none tabular-nums">
                   {time.toLocaleTimeString(clockLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </p>
-                <p className="text-white/50 text-1xl mt-0.5">
+                <p className="text-white/50 text-xs mt-0.5">
                   {time.toLocaleDateString(clockLocale, { weekday: "short", day: "numeric", month: "short" })}
                 </p>
               </div>

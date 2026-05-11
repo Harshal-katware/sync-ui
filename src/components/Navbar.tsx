@@ -40,6 +40,7 @@ interface NavbarProps {
   moduleName?: string;
   moduleSubtitle?: string;
   appName?: string;
+  restaurantName?: string; // ✅ DB se restaurant name
   onSettingsClick?: () => void;
   onProfileClick?: () => void;
   onLogout?: () => void;
@@ -210,6 +211,7 @@ export default function Navbar({
   variant = "dashboard",
   moduleName = "",
   moduleSubtitle = "Restaurant Management System",
+  restaurantName = "", // ✅
 }: NavbarProps): JSX.Element {
 
   const navigate = useNavigate();
@@ -285,7 +287,9 @@ export default function Navbar({
       <div className="w-full bg-white/5 backdrop-blur-sm px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#b2d1df]">
 
         {/* Left — Brand */}
-        <h1 className="text-xl font-serif text-gray-100">🍽️ Sync Restaurant</h1>
+        <h1 className="text-xl font-serif text-gray-100">
+          🍽️ {restaurantName || "Sync Restaurant"} {/* ✅ DB se naam, fallback default */}
+        </h1>
 
         {/* Right — Icons */}
         <div className="flex items-center gap-2">
