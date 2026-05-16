@@ -11,74 +11,130 @@ import Customization from "./Report/Subreport/Customization";
 import MonthlyReport from "./Report/Subreport/MonthlyReport";
 import TopProductsDashboard from "./Report/Subreport/TopSellingProducts";
 import SettingsPage from "./components/Setting";
+import AdminPanel from "./SuperAdmin/AdminPanel";
+import SubscriptionWarning from "./components/SubscriptionWarning";
+import SubscriptionExpired from "./pages/SubscriptionExpired";
 
 export default function App() {
   return (
-  
-  <BrowserRouter>
+    <BrowserRouter>
+      <SubscriptionWarning />
 
       <Routes>
-        <Route path="/" element={
-          <Login />} />
- 
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>}/>
- 
-        <Route path="/inventory" element={
-          <ProtectedRoute>
-          <InventoryManagement/>
-          </ProtectedRoute>} />
- 
-        <Route path="/billing" element={
-          <ProtectedRoute>
-          <RestaurantPOS />
-          </ProtectedRoute>} />
- 
-        <Route path="/menu" element={
-          <ProtectedRoute>
-            <Menupage />
-            </ProtectedRoute>} />
- 
-        <Route path="/settings" element={
-          <ProtectedRoute>
-          <SettingsPage />
-          </ProtectedRoute>} />
- 
+        <Route path="/" element={<Login />} />
+
+        <Route path="/expired" element={<SubscriptionExpired />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/inventory"
+          element={
+            <ProtectedRoute>
+              <InventoryManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/billing"
+          element={
+            <ProtectedRoute>
+              <RestaurantPOS />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/menu"
+          element={
+            <ProtectedRoute>
+              <Menupage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* REPORTS */}
-        <Route path="/reports" element={
-          <ProtectedRoute>
-            <Reports />
-          </ProtectedRoute>}>
- 
-          <Route index element={
+        <Route
+          path="/reports"
+          element={
             <ProtectedRoute>
-              <DailyUpdate />
-            </ProtectedRoute>} />
- 
-          <Route path="daily-report" element={
-            <ProtectedRoute>
-              <DailyUpdate />
-            </ProtectedRoute>} />
- 
-          <Route path="top-selling-products"element={
-            <ProtectedRoute>
-              <TopProductsDashboard />
-            </ProtectedRoute>} />
- 
-          <Route path="customization" element={
-            <ProtectedRoute>
-              <Customization />
-            </ProtectedRoute>} />
-           
-          <Route path="monthly-report" element={
-            <ProtectedRoute>
-              <MonthlyReport />
-           </ProtectedRoute>} />
+              <Reports />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
+              <ProtectedRoute>
+                <DailyUpdate />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="daily-report"
+            element={
+              <ProtectedRoute>
+                <DailyUpdate />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="top-selling-products"
+            element={
+              <ProtectedRoute>
+                <TopProductsDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="customization"
+            element={
+              <ProtectedRoute>
+                <Customization />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="monthly-report"
+            element={
+              <ProtectedRoute>
+                <MonthlyReport />
+              </ProtectedRoute>
+            }
+          />
         </Route>
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
+        
       </Routes>
-     
     </BrowserRouter>
   );
 }

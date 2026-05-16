@@ -1,40 +1,40 @@
 import { useState, useRef, useEffect, type ChangeEvent, type JSX } from "react";
 import { Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+ 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
+ 
 type MenuType = "account" | null;
 type NavbarVariant = "dashboard" | "module";
-
+ 
 interface ChangePasswordForm {
   current: string;
   newPass: string;
   confirm: string;
 }
-
+ 
 interface ChangePasswordShow {
   current: boolean;
   newPass: boolean;
   confirm: boolean;
 }
-
+ 
 interface PasswordField {
   key: keyof ChangePasswordForm;
   label: string;
   placeholder: string;
 }
-
+ 
 interface ChangePasswordModalProps {
   onClose: () => void;
   token: string;
 }
-
+ 
 interface LogoutConfirmProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
+ 
 interface NavbarProps {
   variant?: NavbarVariant;
   moduleName?: string;
@@ -45,15 +45,15 @@ interface NavbarProps {
   onProfileClick?: () => void;
   onLogout?: () => void;
 }
-
+ 
 interface EyeIconProps {
   visible: boolean;
 }
-
+ 
 // ─── Auth helpers ──────────────────────────────────────────────────────────
-
+ 
 const API_BASE = "http://localhost:8080/api";
-
+ 
 function getStoredUser() {
   try {
     const get = (key: string) =>
@@ -68,27 +68,27 @@ function getStoredUser() {
     return { token: "", name: "User", email: "", role: "ADMIN" };
   }
 }
-
+ 
 // ─── Change Password Modal ─────────────────────────────────────────────────
-
+ 
 function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.Element {
   const [form, setForm] = useState<ChangePasswordForm>({ current: "", newPass: "", confirm: "" });
   const [show, setShow] = useState<ChangePasswordShow>({ current: false, newPass: false, confirm: false });
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-
+ 
   const handleSubmit = async (): Promise<void> => {
     setError("");
     if (!form.current || !form.newPass || !form.confirm)
       return setError("All fields are required.");
-
+ 
     // ✅ Fix 3 — 8 characters minimum (backend ke saath match)
     if (form.newPass.length < 8)
       return setError("New password must be at least 8 characters.");
     if (form.newPass !== form.confirm)
       return setError("Passwords do not match.");
-
+ 
     setLoading(true);
     try {
       // ✅ Fix 4 — axios use kar raha hai, fetch nahi
@@ -116,7 +116,7 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
       setLoading(false);
     }
   };
-
+ 
   const EyeIcon = ({ visible }: EyeIconProps): JSX.Element => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       {visible ? (
@@ -126,13 +126,13 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
       )}
     </svg>
   );
-
+ 
   const fields: PasswordField[] = [
     { key: "current", label: "Current Password", placeholder: "Enter current password" },
     { key: "newPass", label: "New Password", placeholder: "Enter new password" },
     { key: "confirm", label: "Confirm Password", placeholder: "Confirm new password" },
   ];
-
+ 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -176,9 +176,9 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
     </div>
   );
 }
-
+ 
 // ─── Logout Confirmation ───────────────────────────────────────────────────
-
+ 
 function LogoutConfirm({ onConfirm, onCancel }: LogoutConfirmProps): JSX.Element {
   return (
     <div
@@ -204,37 +204,37 @@ function LogoutConfirm({ onConfirm, onCancel }: LogoutConfirmProps): JSX.Element
     </div>
   );
 }
-
+ 
 // ─── Main Navbar ───────────────────────────────────────────────────────────
-
+ 
 export default function Navbar({
   variant = "dashboard",
   moduleName = "",
   moduleSubtitle = "Restaurant Management System",
   restaurantName = "", // ✅
 }: NavbarProps): JSX.Element {
-
+ 
   const navigate = useNavigate();
-
+ 
   const [openMenu, setOpenMenu] = useState<MenuType>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showLogout, setShowLogout] = useState<boolean>(false);
-
+ 
   // ✅ Fix 1 — user state re-read on mount
   const [user, setUser] = useState(getStoredUser);
   useEffect(() => {
     setUser(getStoredUser());
   }, []);
-
+ 
   const accountRef = useRef<HTMLDivElement>(null);
-
+ 
   const initials: string = user.name
     .split(" ")
     .map((w: string) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
-
+ 
   useEffect(() => {
     const handler = (e: MouseEvent): void => {
       if (accountRef.current && !accountRef.current.contains(e.target as Node))
@@ -243,7 +243,7 @@ export default function Navbar({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
+ 
   const handleLogoutConfirm = (): void => {
     // ✅ Fix 2 — userContact bhi clear hoga logout pe
     ["token", "userName", "userEmail", "userRole", "userContact"].forEach((k) => {
@@ -253,7 +253,7 @@ export default function Navbar({
     setShowLogout(false);
     window.location.replace("/");
   };
-
+ 
   // ── MODULE VARIANT ──────────────────────────────────────────────────────
   if (variant === "module") {
     return (
@@ -275,7 +275,7 @@ export default function Navbar({
       </div>
     );
   }
-
+ 
   // ── DASHBOARD VARIANT ──────────────────────────────────────────────────
   return (
     <>
@@ -283,17 +283,17 @@ export default function Navbar({
         @keyframes cpFadeIn    { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
         @keyframes cpSlideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
-
+ 
       <div className="w-full bg-white/5 backdrop-blur-sm px-4 sm:px-8 py-4 flex items-center justify-between gap-3 text-[#b2d1df]">
-
+ 
         {/* Left — Brand */}
         <h1 className="text-xl font-serif text-gray-100">
           🍽️ {restaurantName || "Sync Restaurant"} {/* ✅ DB se naam, fallback default */}
         </h1>
-
+ 
         {/* Right — Icons */}
         <div className="flex items-center gap-2">
-
+ 
           {/* ⚙️ Settings */}
           <button
             onClick={() => navigate("/settings")}
@@ -301,7 +301,7 @@ export default function Navbar({
           >
             <Settings size={20} />
           </button>
-
+ 
           {/* 👤 Account */}
           <div className="relative" ref={accountRef}>
             <button
@@ -326,7 +326,7 @@ export default function Navbar({
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-
+ 
             {openMenu === "account" && (
               <div
                 className="absolute right-0 top-full mt-3 w-64 bg-gray-100 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
@@ -350,7 +350,7 @@ export default function Navbar({
                     </span>
                   </div>
                 </div>
-
+ 
                 {/* Change Password */}
                 <div className="py-1.5">
                   <button
@@ -372,7 +372,7 @@ export default function Navbar({
                     </svg>
                   </button>
                 </div>
-
+ 
                 {/* Sign Out */}
                 <div className="border-t border-gray-100 p-2">
                   <button
@@ -394,7 +394,7 @@ export default function Navbar({
           </div>
         </div>
       </div>
-
+ 
       {showPassword && (
         <ChangePasswordModal onClose={() => setShowPassword(false)} token={user.token} />
       )}

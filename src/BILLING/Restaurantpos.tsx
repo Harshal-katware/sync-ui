@@ -4,22 +4,23 @@ import { useLang } from "../context/languageContext"; // ✅ Added
 
 const KOT_PRINT_STYLE = `
   @media print {
-    @page {
-      size: 80mm auto;
-      margin: 0;
-    }
     body * { visibility: hidden !important; }
     .kot-print-area, .kot-print-area * { visibility: visible !important; }
     .kot-print-area {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 76mm !important;
+      width: 80mm !important;
       font-family: monospace !important;
-      font-size: 13px !important;
-      padding: 6px !important;
+      font-size: 12px !important;
+      padding: 4px !important;
       background: white !important;
-      display: block !important;
+    }
+
+    /* ✅ Hide browser UI */
+    @page {
+      size: 80mm auto;
+      margin: 0mm;
     }
   }
 `;
