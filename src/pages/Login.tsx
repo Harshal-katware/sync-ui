@@ -53,54 +53,109 @@ export default function AuthPage(): JSX.Element {
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
+
     if (token) navigate("/dashboard");
   }, [navigate]);
 
+  // ================= VALIDATIONS =================
   const validateField = (name: keyof FormState, value: string): string => {
+    const trimmedValue = value.trim();
+
     switch (name) {
       case "name":
         if (!isLogin) {
-          if (!value.trim()) return "Full name is required";
-          if (value.trim().length < 3) return "Minimum 3 characters required";
-          if (!/^[a-zA-Z\s]+$/.test(value)) return "Only letters allowed";
+          if (!trimmedValue) return "Full name is required";
+
+          if (trimmedValue.length < 3)
+            return "Name must be at least 3 characters";
+
+          if (trimmedValue.length > 50)
+            return "Name cannot exceed 50 characters";
+
+          if (!/^[A-Za-z\s]+$/.test(trimmedValue))
+            return "Name should contain only letters";
+
+          if (/^\s|\s$/.test(value))
+            return "Name should not start or end with spaces";
         }
         return "";
 
       case "email":
-        if (!value) return "Email or contact number is required";
+        if (!trimmedValue)
+          return isLogin
+            ? "Email or mobile number is required"
+            : "Email is required";
+
         if (isLogin) {
           const isEmail =
-            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
-          const isPhone = /^\d{10}$/.test(value);
+            /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(
+              trimmedValue,
+            );
+
+          const isPhone = /^[6-9]\d{9}$/.test(trimmedValue);
+
           if (!isEmail && !isPhone)
-            return "Enter valid email or 10-digit number";
+            return "Enter valid email or 10-digit mobile number";
         } else {
-          if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value))
-            return "Enter a valid email (e.g. user@example.com)";
+          if (
+            !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(
+              trimmedValue,
+            )
+          ) {
+            return "Enter a valid email address";
+          }
+
+          if (trimmedValue.length > 100)
+            return "Email cannot exceed 100 characters";
         }
+
         return "";
 
       case "password":
         if (!value) return "Password is required";
-        if (value.length < 8) return "Minimum 8 characters required";
+
+        if (value.length < 8)
+          return "Password must be at least 8 characters";
+
+        if (value.length > 20)
+          return "Password cannot exceed 20 characters";
+
         if (!/[A-Z]/.test(value))
           return "At least one uppercase letter required";
-        if (!/[0-9]/.test(value)) return "At least one number required";
+
+        if (!/[a-z]/.test(value))
+          return "At least one lowercase letter required";
+
+        if (!/[0-9]/.test(value))
+          return "At least one number required";
+
         if (!/[!@#$%^&*(),.?":{}|<>]/.test(value))
           return "At least one special character required";
+
+        if (/\s/.test(value))
+          return "Password should not contain spaces";
+
         return "";
 
       case "confirm":
         if (!isLogin) {
           if (!value) return "Please confirm your password";
-          if (value !== form.password) return "Passwords do not match";
+
+          if (value !== form.password)
+            return "Passwords do not match";
         }
         return "";
 
       case "contactNumber":
         if (!isLogin) {
-          if (!value) return "Contact number is required";
-          if (!/^\d{10}$/.test(value)) return "Enter valid 10-digit number";
+          if (!trimmedValue)
+            return "Contact number is required";
+
+          if (!/^[6-9]\d{9}$/.test(trimmedValue))
+            return "Enter valid 10-digit mobile number";
+
+          if (/(\d)\1{5,}/.test(trimmedValue))
+            return "Invalid mobile number";
         }
         return "";
 
@@ -115,55 +170,113 @@ export default function AuthPage(): JSX.Element {
       : ["name", "email", "password", "confirm", "contactNumber"];
 
     const err: FormErrors = {};
+
     fields.forEach((field) => {
       const msg = validateField(field, form[field]);
+
       if (msg) err[field] = msg;
     });
+
     return err;
   };
 
+  // ================= HANDLE CHANGE =================
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    const updatedForm = { ...form, [name]: value };
+
+    let updatedValue = value;
+
+    // Name validation
+    if (name === "name") {
+      updatedValue = value.replace(/[^A-Za-z\s]/g, "");
+    }
+
+    // Contact validation
+    if (name === "contactNumber") {
+      updatedValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    const updatedForm = {
+      ...form,
+      [name]: updatedValue,
+    };
+
     setForm(updatedForm);
 
     if (touched[name as keyof TouchedFields]) {
-      const msg = validateField(name as keyof FormState, value);
-      setErrors((prev) => ({ ...prev, [name]: msg }));
+      const msg = validateField(
+        name as keyof FormState,
+        updatedValue,
+      );
 
+      setErrors((prev) => ({
+        ...prev,
+        [name]: msg,
+      }));
+
+      // confirm password live validation
       if (name === "password" && touched.confirm) {
         const confirmMsg =
-          updatedForm.confirm !== value ? "Passwords do not match" : "";
-        setErrors((prev) => ({ ...prev, confirm: confirmMsg }));
+          updatedForm.confirm !== updatedValue
+            ? "Passwords do not match"
+            : "";
+
+        setErrors((prev) => ({
+          ...prev,
+          confirm: confirmMsg,
+        }));
       }
     }
   };
 
+  // ================= HANDLE BLUR =================
   const handleBlur = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
+
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+
     const msg = validateField(name as keyof FormState, value);
-    setErrors((prev) => ({ ...prev, [name]: msg }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: msg,
+    }));
   };
 
+  // ================= INPUT CLASS =================
   const inputClass = (field: keyof FormErrors): string => {
     const base =
       "w-full px-4 py-2 border rounded bg-transparent transition-colors duration-200";
-    if (touched[field] && errors[field])
+
+    if (touched[field] && errors[field]) {
       return `${base} border-red-500 focus:outline-none focus:border-red-400`;
-    if (touched[field] && !errors[field])
+    }
+
+    if (touched[field] && !errors[field]) {
       return `${base} border-green-500 focus:outline-none focus:border-green-400`;
+    }
+
     return `${base} border-white/50 focus:outline-none focus:border-white`;
   };
 
-  // ── Helper: save to storage ──────────────────────────────────────
-  const saveToStorage = (data: Record<string, string>, remember: boolean) => {
+  // ================= STORAGE =================
+  const saveToStorage = (
+    data: Record<string, string>,
+    remember: boolean,
+  ) => {
     const store = remember ? localStorage : sessionStorage;
+
     Object.entries(data).forEach(([key, val]) => {
-      if (val !== undefined && val !== null) store.setItem(key, String(val));
+      if (val !== undefined && val !== null) {
+        store.setItem(key, String(val));
+      }
     });
   };
 
+  // ================= SUBMIT =================
   const handleSubmit = async (): Promise<void> => {
     const allTouched: TouchedFields = {
       name: true,
@@ -172,18 +285,24 @@ export default function AuthPage(): JSX.Element {
       confirm: true,
       contactNumber: true,
     };
+
     setTouched(allTouched);
 
     const validationErrors = validateAll();
+
     setErrors(validationErrors);
+
     if (Object.keys(validationErrors).length !== 0) return;
 
     try {
       if (isLogin) {
-        const res = await axios.post("http://localhost:8080/api/auth/login", {
-          email: form.email,
-          password: form.password,
-        });
+        const res = await axios.post(
+          "http://localhost:8080/api/auth/login",
+          {
+            email: form.email.trim(),
+            password: form.password,
+          },
+        );
 
         const {
           token,
@@ -212,12 +331,16 @@ export default function AuthPage(): JSX.Element {
 
         navigate("/dashboard");
       } else {
-        await axios.post("http://localhost:8080/api/auth/register", {
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          contactNumber: form.contactNumber,
-        });
+        await axios.post(
+          "http://localhost:8080/api/auth/register",
+          {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+            contactNumber: form.contactNumber,
+          },
+        );
+
         setIsLogin(true);
       }
 
@@ -226,21 +349,33 @@ export default function AuthPage(): JSX.Element {
       setTouched({});
     } catch (err: any) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.message ?? err?.response?.data;
+
+      const serverMsg =
+        err?.response?.data?.message ?? err?.response?.data;
 
       if (status === 401) {
-        setErrors({ password: "Invalid email or password. Please try again." });
+        setErrors({
+          password:
+            "Invalid email or password. Please try again.",
+        });
       } else if (status === 404) {
-        setErrors({ email: "No account found with this email." });
+        setErrors({
+          email: "No account found with this email.",
+        });
       } else if (status === 409) {
         const msg =
           typeof serverMsg === "string"
             ? serverMsg
             : "Email or contact already registered.";
+
         if (msg.toLowerCase().includes("contact")) {
-          setErrors({ contactNumber: msg });
+          setErrors({
+            contactNumber: msg,
+          });
         } else {
-          setErrors({ email: msg });
+          setErrors({
+            email: msg,
+          });
         }
       } else {
         setErrors({
@@ -283,6 +418,7 @@ export default function AuthPage(): JSX.Element {
                 onBlur={handleBlur}
                 className={inputClass("name")}
               />
+
               {touched.name && errors.name && (
                 <p className="text-red-400 text-xs mt-1 ml-1">
                   ⚠ {errors.name}
@@ -295,14 +431,21 @@ export default function AuthPage(): JSX.Element {
           <div>
             <input
               name="email"
-              placeholder="Email or Contact Number"
+              placeholder={
+                isLogin
+                  ? "Email or Mobile Number"
+                  : "Email Address"
+              }
               value={form.email}
               onChange={handleChange}
               onBlur={handleBlur}
               className={inputClass("email")}
             />
+
             {touched.email && errors.email && (
-              <p className="text-red-400 text-xs mt-1 ml-1">⚠ {errors.email}</p>
+              <p className="text-red-400 text-xs mt-1 ml-1">
+                ⚠ {errors.email}
+              </p>
             )}
           </div>
 
@@ -311,18 +454,20 @@ export default function AuthPage(): JSX.Element {
             <div>
               <input
                 name="contactNumber"
-                placeholder="Contact Number (10 digits)"
+                placeholder="Contact Number"
                 value={form.contactNumber}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 maxLength={10}
                 className={inputClass("contactNumber")}
               />
-              {touched.contactNumber && errors.contactNumber && (
-                <p className="text-red-400 text-xs mt-1 ml-1">
-                  ⚠ {errors.contactNumber}
-                </p>
-              )}
+
+              {touched.contactNumber &&
+                errors.contactNumber && (
+                  <p className="text-red-400 text-xs mt-1 ml-1">
+                    ⚠ {errors.contactNumber}
+                  </p>
+                )}
             </div>
           )}
 
@@ -338,13 +483,21 @@ export default function AuthPage(): JSX.Element {
                 onBlur={handleBlur}
                 className={`${inputClass("password")} pr-10`}
               />
+
               <span
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() =>
+                  setShowPassword(!showPassword)
+                }
                 className="absolute right-3 top-2.5 cursor-pointer text-white/70 hover:text-white"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
               </span>
             </div>
+
             {touched.password && errors.password && (
               <p className="text-red-400 text-xs mt-1 ml-1">
                 ⚠ {errors.password}
@@ -352,7 +505,7 @@ export default function AuthPage(): JSX.Element {
             )}
           </div>
 
-          {/* Confirm */}
+          {/* Confirm Password */}
           {!isLogin && (
             <div>
               <div className="relative">
@@ -365,13 +518,21 @@ export default function AuthPage(): JSX.Element {
                   onBlur={handleBlur}
                   className={`${inputClass("confirm")} pr-10`}
                 />
+
                 <span
-                  onClick={() => setShowConfirm(!showConfirm)}
+                  onClick={() =>
+                    setShowConfirm(!showConfirm)
+                  }
                   className="absolute right-3 top-2.5 cursor-pointer text-white/70 hover:text-white"
                 >
-                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirm ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </span>
               </div>
+
               {touched.confirm && errors.confirm && (
                 <p className="text-red-400 text-xs mt-1 ml-1">
                   ⚠ {errors.confirm}
@@ -389,10 +550,12 @@ export default function AuthPage(): JSX.Element {
               checked={remember}
               onChange={() => setRemember(!remember)}
             />
+
             Remember Me
           </label>
         )}
 
+        {/* Button */}
         <button
           onClick={handleSubmit}
           className="w-full mt-5 bg-white text-black py-2 rounded font-semibold hover:bg-gray-200 transition-colors"
@@ -400,8 +563,12 @@ export default function AuthPage(): JSX.Element {
           {isLogin ? "SIGN IN" : "SIGN UP"}
         </button>
 
+        {/* Switch */}
         <p className="mt-4 text-sm">
-          {isLogin ? "New User?" : "Already have account?"}
+          {isLogin
+            ? "New User?"
+            : "Already have account?"}
+
           <span
             onClick={() => {
               setIsLogin(!isLogin);

@@ -10,6 +10,7 @@ import type { JSX } from "react";
 import restroImage from "../assets/restro4.jpg";
 
 import { useLang } from "../context/languageContext";
+import { getRestaurantInfo } from "../Api/restaurantApi"; // ✅
 
 interface NavCard {
   title: string;
@@ -27,15 +28,16 @@ interface NavCard {
 
 export default function Dashboard(): JSX.Element {
   const { t, lang } = useLang();
-
   const navigate = useNavigate();
 
   const [time, setTime] = useState(new Date());
+  const [restaurantName, setRestaurantName] = useState<string>(""); // ✅
 
+  // ✅ Restaurant name DB se fetch karo
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-
-    return () => clearInterval(timer);
+    getRestaurantInfo()
+      .then((data) => { if (data?.name) setRestaurantName(data.name); })
+      .catch(() => {}); // fail hone pe default rahega
   }, []);
 
   const userName =
@@ -120,7 +122,7 @@ export default function Dashboard(): JSX.Element {
 
       <div className="relative z-10">
         <div className="relative z-50">
-          <Navbar variant="dashboard" />
+          <Navbar variant="dashboard" restaurantName={restaurantName} /> {/* ✅ naam pass karo */}
         </div>
 
         <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
@@ -128,14 +130,13 @@ export default function Dashboard(): JSX.Element {
           <div className="mb-6 sm:mb-8 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
               <p className="text-emerald-400 text-sm font-semibold tracking-widest uppercase mb-1">
-                {greeting()}, {userName} 👋
+                {greeting()}, {userName} 
               </p>
+              {/* ✅ Restaurant name DB se, fallback t() */}
               <h1 className="text-2xl sm:text-3xl font-bold">
-                {t("dash.title")}
+                {restaurantName ? `${restaurantName}` : t("dash.title")}
               </h1>
-              <p className="text-sm sm:text-base opacity-80">
-                {t("dash.subtitle")}
-              </p>
+              <p className="text-sm sm:text-base opacity-80">{t("dash.subtitle")}</p>
             </div>
 
             {/* Live clock */}
