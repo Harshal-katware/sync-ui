@@ -13,9 +13,14 @@ export default function SubscriptionWarning() {
     localStorage.getItem("subscriptionStatus") ||
     sessionStorage.getItem("subscriptionStatus");
 
+    const userRole =
+    localStorage.getItem("userRole") ||
+    sessionStorage.getItem("userRole");  
+
   if (!subscriptionEnd || dismissed) return null;
   if (subscriptionStatus === "EXPIRED") return null;
-
+  if (userRole === "SUPER_ADMIN") return null;
+  
   const daysLeft = Math.ceil(
     (new Date(subscriptionEnd).getTime() - Date.now()) / 86400000
   );

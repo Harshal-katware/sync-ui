@@ -7,19 +7,16 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps): JSX.Element {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-  const subscriptionStatus =
-    localStorage.getItem("subscriptionStatus") ||
-    sessionStorage.getItem("subscriptionStatus");
+  const subscriptionStatus = localStorage.getItem("subscriptionStatus") || sessionStorage.getItem("subscriptionStatus");
+  const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
 
-  // ✅ No token → go to login
-  if (!token) {
-    return <Navigate to="/" replace />;
-  }
+  if (!token) return <Navigate to="/" replace />;
+
+  // ✅ Super Admin bypasses everything
+  if (userRole === "SUPER_ADMIN") return <>{children}</>;
 
   // ✅ Expired → go to expired page
-  if (subscriptionStatus === "EXPIRED") {
-    return <Navigate to="/expired" replace />;
-  }
+  if (subscriptionStatus === "EXPIRED") return <Navigate to="/expired" replace />;
 
   return <>{children}</>;
 }

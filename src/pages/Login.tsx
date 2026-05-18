@@ -1,4 +1,3 @@
-
 import { useState, useEffect, type ChangeEvent, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -415,6 +414,15 @@ export default function AuthPage(): JSX.Element {
             {isLogin ? "Sign Up" : "Login"}
           </span>
         </p>
+        {/* Hidden Super Admin Access */}
+        <div className="mt-8 flex justify-center">
+          <span
+            onClick={() => navigate("/super-admin/login")}
+            className="text-white/20 hover:text-white/40 text-xs cursor-pointer transition-colors select-none px-4 py-2"
+          >
+            ●
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import SettingsPage from "./components/Setting";
 import AdminPanel from "./SuperAdmin/AdminPanel";
 import SubscriptionWarning from "./components/SubscriptionWarning";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
+import SuperAdminLogin from "./pages/SuperAdminLogin"
 
 export default function App() {
   return (
@@ -25,6 +26,19 @@ export default function App() {
 
         <Route path="/expired" element={<SubscriptionExpired />} />
 
+        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+
+        <Route path="/super-admin" element={
+         <ProtectedRoute>
+          <Dashboard/>
+         </ProtectedRoute>
+        } />
+
+        <Route path="/admin" element={
+         <ProtectedRoute>
+          <AdminPanel />
+         </ProtectedRoute>
+        } />
         <Route
           path="/dashboard"
           element={
@@ -124,15 +138,6 @@ export default function App() {
             }
           />
         </Route>
-
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </BrowserRouter>
   );
