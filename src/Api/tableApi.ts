@@ -12,11 +12,6 @@ export const addTable = async (table: object) => {
     return res.data;
 };
 
-export const updateTable = async (id: number, table: object) => {
-    const res = await axiosInstance.put(`${BASE_URL}/${id}`, table);
-    return res.data;
-};
-
 export const deleteTable = async (id: number) => {
     await axiosInstance.delete(`${BASE_URL}/${id}`);
 };
