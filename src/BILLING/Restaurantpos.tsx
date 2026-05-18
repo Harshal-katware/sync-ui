@@ -1,24 +1,27 @@
-import { useState, useMemo, useEffect, type JSX } from "react";
+import { useState, useMemo, useEffect, useRef, type JSX } from "react";
 import axiosInstance from "../Api/axiosInstance";
- 
+import { getAllCaptains, type Captain } from "../Api/captainApi";
+import { useLang, type Language } from "../context/languageContext";
+
 const KOT_PRINT_STYLE = `
   @media print {
-    @page {
-      size: 80mm auto;
-      margin: 0;
-    }
     body * { visibility: hidden !important; }
     .kot-print-area, .kot-print-area * { visibility: visible !important; }
     .kot-print-area {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
-      width: 76mm !important;
+      width: 80mm !important;
       font-family: monospace !important;
-      font-size: 13px !important;
-      padding: 6px !important;
+      font-size: 12px !important;
+      padding: 4px !important;
       background: white !important;
-      display: block !important;
+    }
+
+    /* ✅ Hide browser UI */
+    @page {
+      size: 80mm auto;
+      margin: 0mm;
     }
   }
 `;
@@ -30,7 +33,6 @@ function injectPrintStyle(): void {
   tag.innerHTML = KOT_PRINT_STYLE;
   document.head.appendChild(tag);
 }
- 
 type Category    = "veg" | "nonveg" | "drink";
 type Zone        = "HALL" | "FAMILY" | "PARCEL";
 type PaymentMode = "CASH" | "CARD" | "UPI" | "ONLINE";
@@ -87,7 +89,6 @@ const ZONE_BTNS: ZoneButton[] = [
   { val: "FAMILY", label: "FAMILY",       cls: "bg-yellow-700 text-white" },
   { val: "PARCEL", label: "PARCEL ORDER", cls: "bg-blue-800 text-white"   },
 ];
- 
 function Toast({ msg }: { msg: string }): JSX.Element {
   return (
     <div className="fixed bottom-16 right-4 z-50 text-white font-bold text-base px-6 py-4 rounded-xl shadow-2xl"
@@ -104,7 +105,6 @@ function Spinner(): JSX.Element {
     </div>
   );
 }
- 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }): JSX.Element {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -118,14 +118,12 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
     </div>
   );
 }
- 
 interface PrintBillModalProps {
   subtotal:  number;
   total:     number;
   onClose:   () => void;
   onConfirm: (finalTotal: number, paymentMode: PaymentMode) => void;
 }
- 
 function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalProps): JSX.Element {
   const [paymentMode,      setPaymentMode]      = useState<PaymentMode>("CASH");
   const [discountAmt,      setDiscountAmt]      = useState<number>(0);
@@ -143,7 +141,7 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
       <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden" style={{ fontFamily: "Arial, sans-serif" }}>
         <div className="flex items-center justify-between px-4 py-2.5" style={{ background: "#1a1a2e" }}>
-          <span className="text-white text-sm font-bold">✅ Settle Bill</span>
+          <span className="text-white text-sm font-bold">✅ ("bill.settleBill")</span>
           <button onClick={onClose} className="text-white text-xl leading-none hover:text-red-400">×</button>
         </div>
  
@@ -157,7 +155,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </select>
             </div>
           </div>
- 
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Discount Amt",         sym: "₹", val: discountAmt, set: (v: number) => { setDiscountAmt(v); setDiscountPer(0); }, reset: () => setDiscountAmt(0) },
@@ -174,7 +171,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </div>
             ))}
           </div>
- 
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[10px] font-bold text-gray-600 uppercase mb-1">Service Charge Per</p>
@@ -192,7 +188,6 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               </div>
             </div>
           </div>
- 
           <div className="grid grid-cols-2 gap-2 items-end">
             <div>
               <p className="text-[11px] text-gray-600 mb-1">Tender Cash</p>
@@ -207,10 +202,10 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
               <p className="text-lg font-bold text-gray-800">₹ {returnCash.toFixed(2)}</p>
             </div>
           </div>
- 
+
           <div className="border-t border-gray-300 pt-2 space-y-1.5">
             <div className="flex justify-between text-xs text-gray-700"><span>Bill Amt.</span><span className="font-semibold">₹{subtotal.toFixed(2)}</span></div>
-            <div className="flex justify-between text-xs text-gray-700"><span>Discount Amt.</span><span>{effectiveDisc.toFixed(2)}</span></div>
+            <div className="flex justify-between text-xs text-gray-700"><span>("bill.discount") Amt.</span><span>{effectiveDisc.toFixed(2)}</span></div>
             <div className="flex justify-between text-xs text-gray-700"><span>Service Charge Amt.</span><span>{serviceChargeAmt.toFixed(2)}</span></div>
             <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-300 pt-1.5"><span>Final Total</span><span>₹ {finalTotal.toFixed(2)}</span></div>
           </div>
@@ -223,12 +218,19 @@ function PrintBillModal({ subtotal, total, onClose, onConfirm }: PrintBillModalP
     </div>
   );
 }
- 
+
 export default function RestaurantPOS(): JSX.Element {
- 
+  const { t } = useLang(); // ✅ Translation hook
+
   const [tables,        setTables]        = useState<TableItem[]>([]);
   const [menuItems,     setMenuItems]     = useState<MenuItem[]>([]);
- 
+
+  const [captains,            setCaptains]            = useState<Captain[]>([]);
+  const [selectedCaptain,     setSelectedCaptain]     = useState<Captain | null>(null);
+  const [captainSearch,       setCaptainSearch]       = useState<string>("");
+  const [showCaptainDropdown, setShowCaptainDropdown] = useState<boolean>(false);
+  const captainWrapRef = useRef<HTMLDivElement>(null);
+
   const [orders, setOrders] = useState<OrderMap>(() => {
     try { const s = localStorage.getItem("pos_orders"); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
@@ -250,19 +252,45 @@ export default function RestaurantPOS(): JSX.Element {
   const [loadingMenu,   setLoadingMenu]   = useState<boolean>(true);
   const [loadingTables, setLoadingTables] = useState<boolean>(true);
   const [saving,        setSaving]        = useState<boolean>(false);
- 
+
   const [kotItemsToPrint, setKotItemsToPrint] = useState<{ menuId: number; name: string; emoji: string; price: number; qty: number }[]>([]);
   const [kotTableInfo,    setKotTableInfo]    = useState<{ name: string; zone: string } | null>(null);
   const [shouldPrint,     setShouldPrint]     = useState(false);
- 
+
   const [billItemsToPrint,       setBillItemsToPrint]       = useState<{ menuId: number; name: string; emoji: string; price: number; qty: number }[]>([]);
   const [billInfo,               setBillInfo]               = useState<{ tableName: string; subtotal: number; discount: number; total: number } | null>(null);
   const [shouldPrintBillReceipt, setShouldPrintBillReceipt] = useState(false);
- 
-  useEffect(() => { injectPrintStyle(); fetchMenuItems(); fetchTables(); }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (captainWrapRef.current && !captainWrapRef.current.contains(e.target as Node)) {
+        setShowCaptainDropdown(false);
+        if (selectedCaptain) {
+          setCaptainSearch(selectedCaptain.name);
+        } else {
+          setCaptainSearch("");
+        }
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [selectedCaptain]);
+
+  useEffect(() => {
+    if (selectedCaptain) setCaptainSearch(selectedCaptain.name);
+    else setCaptainSearch("");
+  }, [selectedCaptain]);
+
+  useEffect(() => {
+    injectPrintStyle();
+    fetchMenuItems();
+    fetchTables();
+    getAllCaptains().then((all) => setCaptains(all.filter((c) => c.active)));
+  }, []);
+
   useEffect(() => { localStorage.setItem("pos_orders", JSON.stringify(orders)); }, [orders]);
   useEffect(() => { localStorage.setItem("pos_table_order_ids", JSON.stringify(tableOrderIds)); }, [tableOrderIds]);
- 
+
   useEffect(() => {
     if (shouldPrint && kotItemsToPrint.length > 0) {
       setShouldPrint(false);
@@ -272,7 +300,6 @@ export default function RestaurantPOS(): JSX.Element {
       }));
     }
   }, [shouldPrint, kotItemsToPrint]);
- 
   useEffect(() => {
     if (shouldPrintBillReceipt && billItemsToPrint.length > 0) {
       setShouldPrintBillReceipt(false);
@@ -282,7 +309,6 @@ export default function RestaurantPOS(): JSX.Element {
       }));
     }
   }, [shouldPrintBillReceipt, billItemsToPrint]);
- 
   const fetchMenuItems = async () => {
     setLoadingMenu(true);
     try {
@@ -304,15 +330,14 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to load tables!");
     } finally { setLoadingTables(false); }
   };
- 
+
   const notify = (msg: string): void => { setToast(msg); setTimeout(() => setToast(null), 2400); };
- 
+
   const currentOrder: OrderItem[] = selectedTable ? (orders[selectedTable] ?? []) : [];
   const setCurrentOrder = (arr: OrderItem[]): void => {
     if (!selectedTable) return;
     setOrders((prev) => ({ ...prev, [selectedTable]: arr }));
   };
- 
   const addToOrder = (menuId: number): void => {
     if (!selectedTable) { notify("⚠️ Please select a table first!"); return; }
     const m = menuItems.find((x) => x.id === menuId);
@@ -329,39 +354,44 @@ export default function RestaurantPOS(): JSX.Element {
     if (isNaN(parsed) || parsed < 1) return;
     setCurrentOrder(currentOrder.map((x) => x.menuId === menuId ? { ...x, qty: parsed } : x));
   };
- 
+
   const removeItem = (menuId: number): void => setCurrentOrder(currentOrder.filter((x) => x.menuId !== menuId));
- 
-  // ── Bill Calculations — No GST ────────────────────────────────────────────
+
   const subtotal:   number = currentOrder.reduce((s, i) => s + i.price * i.qty, 0);
   const discAmt:    number = subtotal * (Math.min(100, Math.max(0, discount)) / 100);
   const total:      number = subtotal - discAmt;
   const totalItems: number = currentOrder.reduce((s, i) => s + i.qty, 0);
   const unsentItems        = currentOrder.filter((i) => i.qty > i.sentQty);
- 
   const filteredMenu: MenuItem[] = useMemo(
     () => menuItems.filter((m) => menuSearch && m.name.toLowerCase().includes(menuSearch.toLowerCase())),
     [menuItems, menuSearch]
   );
- 
+
+  const filteredCaptains: Captain[] = useMemo(
+    () => captains.filter(
+      (c) =>
+        c.active &&
+        (captainSearch === "" ||
+          c.name.toLowerCase().includes(captainSearch.toLowerCase()) ||
+          (c.phone ?? "").includes(captainSearch))
+    ),
+    [captains, captainSearch]
+  );
+
   const filteredTables: TableItem[] = tables.filter((t) => zone === "all" || t.zone === zone);
- 
-  // ── KEY FIX: ensureOrderId ────────────────────────────────────────────────
-  // Agar order pehle se exist karta hai toh wahi return karo
-  // Naya order tabhi banao jab pehle se koi orderId nahi hai
-  // Is se saveBill / printBill / settle sab ek hi order use karenge
+
   const ensureOrderId = async (tableId: number, orderItems: OrderItem[]): Promise<number> => {
     const existing = tableOrderIds[tableId] ?? null;
     if (existing) return existing;
- 
     const tableObj = tables.find((t) => t.id === tableId);
     const sub      = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
     const disc     = sub * (Math.min(100, Math.max(0, discount)) / 100);
     const tot      = sub - disc;
- 
     const payload = {
       tableId,
       tableName:     tableObj?.name ?? "",
+      captainName:   selectedCaptain?.name ?? "",
+      captainId:     selectedCaptain?.id ?? null,
       items:         orderItems.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })),
       subtotal:      sub,
       discount:      disc,
@@ -375,26 +405,24 @@ export default function RestaurantPOS(): JSX.Element {
     setTableOrderIds((prev) => ({ ...prev, [tableId]: newId }));
     return newId;
   };
- 
-  // ── Print KOT ─────────────────────────────────────────────────────────────
   const printKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     const snapshot = [...currentOrder];
     const toSend   = snapshot.filter((i) => i.qty > i.sentQty);
     if (toSend.length === 0) { notify("⚠️ No new items to send to kitchen!"); return; }
- 
+
     const kotItems = toSend.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty - i.sentQty }));
- 
+
     setSaving(true);
     try {
       const tableObj = tables.find((t) => t.id === selectedTable);
       let orderId    = tableOrderIds[selectedTable] ?? null;
- 
       if (!orderId) {
-        // Pehla KOT — naya order banao sirf KOT items se
         const sub  = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
         const payload = {
           tableId: selectedTable, tableName: tableObj?.name ?? "",
+          captainName: selectedCaptain?.name ?? "",
+          captainId:   selectedCaptain?.id ?? null,
           items: kotItems, subtotal: sub, discount: 0, gst: 0,
           serviceCharge: 0, billCharge: 0, total: sub,
         };
@@ -402,15 +430,15 @@ export default function RestaurantPOS(): JSX.Element {
         orderId = order.id as number;
         setTableOrderIds((prev) => ({ ...prev, [selectedTable!]: orderId }));
       } else {
-        // Order already hai — sirf KOT add karo
         try {
           await axiosInstance.post(`/api/orders/${orderId}/kot`, { items: kotItems });
         } catch (kotErr: any) {
           if (kotErr.response?.status === 404) {
-            // Backend pe order nahi mila — fresh banao
             const sub = kotItems.reduce((s, i) => s + i.price * i.qty, 0);
             const payload = {
               tableId: selectedTable, tableName: tableObj?.name ?? "",
+              captainName: selectedCaptain?.name ?? "",
+              captainId:   selectedCaptain?.id ?? null,
               items: kotItems, subtotal: sub, discount: 0, gst: 0,
               serviceCharge: 0, billCharge: 0, total: sub,
             };
@@ -431,8 +459,6 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to print KOT!");
     } finally { setSaving(false); }
   };
- 
-  // ── Save KOT ──────────────────────────────────────────────────────────────
   const saveKOT = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
@@ -445,17 +471,15 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to save KOT!");
     } finally { setSaving(false); }
   };
- 
-  // ── Save Bill ─────────────────────────────────────────────────────────────
-  // ✅ FIX: Agar orderId pehle se hai toh PUT karo, naya order mat banao
   const saveBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
     try {
       const orderId = await ensureOrderId(selectedTable, currentOrder);
-      // Total update karo
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
       await axiosInstance.put(`/api/orders/${orderId}/save`);
       notify("💾 Bill Saved!");
@@ -464,20 +488,17 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to save bill!");
     } finally { setSaving(false); }
   };
- 
-  // ── Print Bill ────────────────────────────────────────────────────────────
-  // ✅ FIX: Naya order NAHI banata — sirf existing update karta hai aur print karta hai
   const printBill = async (): Promise<void> => {
     if (!selectedTable || !currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setSaving(true);
     try {
       const tableObj = tables.find((t) => t.id === selectedTable);
       const orderId  = await ensureOrderId(selectedTable, currentOrder);
-      // Total update karo
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
-      // Sirf print karo
       setBillItemsToPrint(currentOrder.map((i) => ({ menuId: i.menuId, name: i.name, emoji: i.emoji, price: i.price, qty: i.qty })));
       setBillInfo({ tableName: tableObj?.name ?? "", subtotal, discount: discAmt, total });
       setShouldPrintBillReceipt(true);
@@ -487,15 +508,11 @@ export default function RestaurantPOS(): JSX.Element {
       notify("❌ Failed to print bill!");
     } finally { setSaving(false); }
   };
- 
-  // ── Settle Bill ───────────────────────────────────────────────────────────
   const settleBill = (): void => {
     if (!selectedTable)       { notify("⚠️ Please select a table!"); return; }
     if (!currentOrder.length) { notify("⚠️ Order is empty!"); return; }
     setShowPrintBill(true);
   };
- 
-  // ✅ FIX: ensureOrderId use karta hai — duplicate order nahi banega
   const handlePrintBillConfirm = async (finalTotal: number, paymentMode: PaymentMode): Promise<void> => {
     setShowPrintBill(false);
     setSaving(true);
@@ -503,20 +520,21 @@ export default function RestaurantPOS(): JSX.Element {
       const orderId = await ensureOrderId(selectedTable!, currentOrder);
       await axiosInstance.put(`/api/orders/${orderId}`, {
         subtotal, discount: discAmt, gst: 0, serviceCharge: 0, billCharge: 0, total: finalTotal,
+        captainName: selectedCaptain?.name ?? "",
+        captainId:   selectedCaptain?.id ?? null,
       });
       await axiosInstance.put(`/api/orders/${orderId}/settle`, { paymentMode });
       setLastBill(Math.round(finalTotal));
       setOrders((prev)        => ({ ...prev, [selectedTable!]: [] }));
       setTableOrderIds((prev) => ({ ...prev, [selectedTable!]: null }));
       setDiscount(0);
+      setSelectedCaptain(null);
       notify(`✅ ₹${finalTotal.toFixed(0)} Settled via ${paymentMode}`);
     } catch (err: any) {
       console.error("❌ handlePrintBillConfirm:", err.response?.data, err.response?.status);
       notify("❌ Failed to settle bill!");
     } finally { setSaving(false); }
   };
- 
-  // ── Table CRUD ────────────────────────────────────────────────────────────
   const openAddTable = (): void => { setForm({ name: "", zone: "HALL" }); setModal("addTable"); };
   const tableForm = form as TableFormState;
  
@@ -550,7 +568,6 @@ export default function RestaurantPOS(): JSX.Element {
   };
  
   const selectedTableObj = tables.find((t) => t.id === selectedTable);
- 
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ fontFamily: "Arial, sans-serif", background: "#f0f0e8", fontSize: "13px" }}>
  
@@ -562,26 +579,114 @@ export default function RestaurantPOS(): JSX.Element {
  
       {/* ── LEFT PANEL ── */}
       <div className={`flex flex-col border-r-2 border-gray-400 ${mobileView === "left" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
- 
-        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a" }}>
-          <input value={selectedTableObj?.name ?? ""} readOnly placeholder="Table" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
-          <input placeholder="Captain" className="rounded px-2 py-1 text-sm outline-none text-gray-800" style={{ width: "110px", height: "32px", background: "#fff" }} />
+
+        {/* Header */}
+        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a", minHeight: "44px" }}>
+          <button
+            onClick={() => window.history.back()}
+            className="text-white font-bold rounded hover:bg-white/10 transition-colors flex items-center justify-center"
+            style={{ fontSize: "30px", width: "32px", height: "40px", lineHeight: 1 }}
+            title="Back"
+          >
+            ←
+          </button>
+
+          <input
+            value={selectedTableObj?.name ?? ""}
+            readOnly
+            placeholder="Table"
+            className="rounded px-2 py-1 text-sm outline-none text-gray-800"
+            style={{ width: "110px", height: "32px", background: "#fff" }}
+          />
+
+          <div ref={captainWrapRef} className="relative" style={{ minWidth: "160px" }}>
+            <div className="flex items-center rounded overflow-hidden" style={{ height: "32px", background: "#fff", border: selectedCaptain ? "2px solid #10b981" : "1px solid #ccc" }}>
+              <div className="flex items-center justify-center shrink-0" style={{ width: "28px" }}>
+                {selectedCaptain ? (
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
+                    {selectedCaptain.name.charAt(0).toUpperCase()}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 text-sm">👨‍🍳</span>
+                )}
+              </div>
+
+              <input
+                type="text"
+                placeholder="Captain..."
+                value={captainSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCaptainSearch(val);
+                  setSelectedCaptain(null);
+                  setShowCaptainDropdown(val.length > 0);
+                }}
+                className="flex-1 text-xs outline-none text-gray-800 bg-transparent"
+                style={{ minWidth: 0, padding: "0 4px" }}
+              />
+
+              {selectedCaptain && (
+                <button
+                  onClick={() => { setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
+                  className="shrink-0 text-gray-400 hover:text-red-500 transition-colors px-1 text-xs"
+                  title="Clear captain"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {showCaptainDropdown && (
+              <div
+                className="absolute left-0 z-50 bg-white rounded-lg shadow-xl overflow-y-auto"
+                style={{ top: "calc(100% + 2px)", width: "200px", maxHeight: "220px", border: "1px solid #e5e7eb" }}
+              >
+                <button
+                  onMouseDown={(e) => { e.preventDefault(); setSelectedCaptain(null); setCaptainSearch(""); setShowCaptainDropdown(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 hover:bg-gray-50 transition-colors ${!selectedCaptain ? "bg-gray-50" : ""}`}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-bold shrink-0">—</div>
+                  <span className="text-gray-400 font-medium">No Captain</span>
+                  {!selectedCaptain && <span className="ml-auto text-emerald-600 text-[10px] font-bold">✓</span>}
+                </button>
+
+                {filteredCaptains.length === 0 && (
+                  <div className="text-center py-4 text-gray-400 text-[11px]">No captains found</div>
+                )}
+
+                {filteredCaptains.map((cap) => (
+                  <button
+                    key={cap.id}
+                    onMouseDown={(e) => { e.preventDefault(); setSelectedCaptain(cap); setCaptainSearch(cap.name); setShowCaptainDropdown(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs border-b border-gray-50 hover:bg-emerald-50 transition-colors text-left ${selectedCaptain?.id === cap.id ? "bg-emerald-50" : ""}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-[10px] font-bold shrink-0">
+                      {cap.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 truncate">{cap.name}</p>
+                      {cap.phone && <p className="text-[10px] text-gray-400">📞 {cap.phone}</p>}
+                    </div>
+                    {selectedCaptain?.id === cap.id && <span className="text-emerald-600 text-[10px] font-bold shrink-0">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex-1" />
-          <button onClick={openAddTable} className="text-white text-xs px-2 py-1 rounded" style={{ background: "#e8a020" }}>+ Table</button>
+          <button onClick={openAddTable} className="text-white text-xs px-4 py-2 rounded" style={{ background: "#e8a020" }}>+ Table</button>
         </div>
- 
         <div className="flex gap-3 px-2 py-1.5" style={{ background: "#f0f0e8" }}>
           <input type="text" placeholder="Search by Code/Barcode/Name" value={menuSearch} onChange={(e) => setMenuSearch(e.target.value)}
             className="flex-1 border border-gray-400 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "#fff" }} />
           <button className="text-white px-3 rounded text-sm" style={{ background: "#cc2222" }}>🔍</button>
         </div>
- 
         <div className="grid gap-1 px-2 pb-1" style={{ gridTemplateColumns: "1fr 80px 70px" }}>
           {["Item Name", "Qty · Price", "Total"].map((h) => (
             <div key={h} className="border border-gray-400 rounded text-center py-1 text-xs text-gray-600" style={{ background: "#fff" }}>{h}</div>
           ))}
         </div>
- 
         <div className="flex-1 overflow-y-auto px-2 pb-1 space-y-0.5">
           {loadingMenu ? <Spinner /> : menuSearch ? (
             filteredMenu.length === 0 ? (
@@ -627,32 +732,47 @@ export default function RestaurantPOS(): JSX.Element {
             })
           )}
         </div>
- 
-        {/* Bill Summary — No GST */}
-        <div className="px-3 py-2 border-t-2 border-gray-400 space-y-1" style={{ background: "#f0f0e8" }}>
-          <div className="flex justify-between text-xs text-gray-700"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-          <div className="flex items-center justify-between text-xs text-gray-700">
+
+        {/* Bill Summary */}
+        <div className="px-3 py-2.5 border-t-2 border-gray-400 space-y-2" style={{ background: "#f0f0e8" }}>
+          <div className="flex justify-between text-sm text-gray-700">
+            <span>Subtotal</span>
+            <span>₹{subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm text-gray-700">
             <span>Discount</span>
-            <div className="flex items-center gap-1">
-              <input type="number" min="0" max="100" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                className="w-10 text-xs border border-gray-400 rounded px-1 py-0.5 text-center outline-none" style={{ background: "#fff" }} />
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number" min="0" max="100" value={discount}
+                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                className="w-12 text-sm border border-gray-400 rounded px-1 py-0.5 text-center outline-none"
+                style={{ background: "#fff" }}
+              />
               <span>%</span>
-              <span className="text-red-600">-₹{discAmt.toFixed(2)}</span>
+              <span className="text-red-600 font-medium">-₹{discAmt.toFixed(2)}</span>
             </div>
           </div>
-          <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-400 pt-1">
-            <span>Total</span><span className="text-green-800">₹{total.toFixed(2)}</span>
+          {selectedCaptain && (
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>👨‍🍳 Captain</span>
+              <span className="font-semibold text-gray-700">{selectedCaptain.name}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-400 pt-2">
+            <span>Total</span>
+            <span className="text-green-800">₹{total.toFixed(2)}</span>
           </div>
         </div>
- 
-        <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "44px", transition: "background .2s" }}>
-          <button className="text-white text-xs px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
+
+        {/* Bottom bar */}
+        <div className="flex items-stretch" style={{ background: saving ? "#555" : "#1a7a4a", minHeight: "50px", transition: "background .2s" }}>
+          <button className="text-white text-sm px-3 font-semibold border-r border-green-700 whitespace-nowrap" style={{ background: "#2255aa" }}>
             Last Bill ₹{lastBill.toFixed(2)}
           </button>
-          <div className="flex-1 flex items-center justify-center text-white text-xs font-bold">
+          <div className="flex-1 flex items-center justify-center text-white text-sm font-bold">
             {saving ? "⏳ Saving..." : `ITEMS : ${totalItems}`}
           </div>
-          <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold px-4 border-l border-green-700 hover:bg-green-700 disabled:opacity-50">
+          <button onClick={settleBill} disabled={saving} className="text-white text-base font-bold px-4 border-l border-green-700 hover:bg-green-700 disabled:opacity-50">
             PAY ₹{total.toFixed(2)} →
           </button>
         </div>
@@ -660,7 +780,8 @@ export default function RestaurantPOS(): JSX.Element {
  
       {/* ── RIGHT PANEL ── */}
       <div className={`flex flex-col overflow-hidden ${mobileView === "right" ? "flex" : "hidden"} md:flex`} style={{ width: "100%", flex: "1 1 0", background: "#f0f0e8" }}>
- 
+
+        {/* Action Buttons */}
         <div className="grid gap-1.5 p-2" style={{ background: "#1a1a1a", gridTemplateColumns: "1fr 1fr 1fr" }}>
           <button onClick={printKOT} disabled={saving} className="relative text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>
             🖨️ Print KOT
@@ -675,7 +796,8 @@ export default function RestaurantPOS(): JSX.Element {
           <button onClick={saveKOT}   disabled={saving} className="text-white text-sm font-bold py-2.5 rounded disabled:opacity-50" style={{ background: "#1a7a4a" }}>💾 Save KOT</button>
           <button onClick={settleBill} disabled={saving} className="text-white text-sm font-bold py-2.5 rounded col-span-2 disabled:opacity-50" style={{ background: "#1a7a4a" }}>✅ Settle Bill</button>
         </div>
- 
+
+        {/* Zone Filter Buttons */}
         <div className="flex gap-2 px-3 py-2 border-b-2 border-gray-400 flex-wrap" style={{ background: "#f0f0e8" }}>
           {ZONE_BTNS.map(({ val, label, cls }) => (
             <button key={val} onClick={() => setZone(val)}
@@ -684,7 +806,8 @@ export default function RestaurantPOS(): JSX.Element {
             </button>
           ))}
         </div>
- 
+
+        {/* Tables Grid */}
         <div className="flex-1 overflow-y-auto p-3">
           {loadingTables ? <Spinner /> : (
             <>
@@ -747,8 +870,8 @@ export default function RestaurantPOS(): JSX.Element {
       )}
  
       {toast && <Toast msg={toast} />}
- 
-      {/* KOT Print Area */}
+
+      {/* ── KOT Print Area ── */}
       {kotItemsToPrint.length > 0 && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "18px", marginBottom: "2px", letterSpacing: "1px" }}>PATIL DHABHA</div>
@@ -756,6 +879,11 @@ export default function RestaurantPOS(): JSX.Element {
           <div style={{ fontSize: "13px", marginBottom: "4px" }}>
             <b>Table:</b> {kotTableInfo?.name ?? ""} &nbsp;|&nbsp; <b>Zone:</b> {kotTableInfo?.zone ?? ""}
           </div>
+          {selectedCaptain && (
+            <div style={{ fontSize: "13px", marginBottom: "4px" }}>
+              <b>Captain:</b> {selectedCaptain.name}
+            </div>
+          )}
           <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "4px" }}>
             {new Date().toLocaleString("en-IN")}
           </div>
@@ -778,15 +906,33 @@ export default function RestaurantPOS(): JSX.Element {
           <div style={{ textAlign: "center", marginTop: "12px", fontSize: "12px", borderTop: "1px dashed #000", paddingTop: "6px" }}>** KOT END **</div>
         </div>
       )}
- 
-      {/* Bill Receipt Print Area */}
+
+      {/* ── Bill Receipt Print Area ── */}
       {billItemsToPrint.length > 0 && billInfo && (
         <div className="kot-print-area" style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+
+          {/* Header */}
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "20px", letterSpacing: "1px", marginBottom: "2px" }}>PATIL DHABHA</div>
-          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }} />
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "2px" }}>Old PB Road NH-48, Opp. Aequs - Hattargi</div>
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px", borderBottom: "1px dashed #000", paddingBottom: "6px" }}>📞 9000000000</div>
+
           <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", borderBottom: "1px dashed #000", paddingBottom: "4px", marginBottom: "6px" }}>BILL RECEIPT</div>
+
+          {/* PICK UP banner — only for PARCEL zone */}
+          {selectedTableObj?.zone === "PARCEL" && (
+            <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "16px", background: "#000", color: "#fff", padding: "4px", marginBottom: "6px", letterSpacing: "2px" }}>
+              🛵 PICK UP
+            </div>
+          )}
+
           <div style={{ fontSize: "13px", marginBottom: "3px" }}><b>Table:</b> {billInfo.tableName}</div>
+          {selectedCaptain && (
+            <div style={{ fontSize: "13px", marginBottom: "3px" }}>
+              <b>Captain:</b> {selectedCaptain.name}
+            </div>
+          )}
           <div style={{ fontSize: "12px", marginBottom: "8px", borderBottom: "1px dashed #000", paddingBottom: "5px" }}>{new Date().toLocaleString("en-IN")}</div>
+
           <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px dashed #000" }}>
@@ -805,6 +951,7 @@ export default function RestaurantPOS(): JSX.Element {
               ))}
             </tbody>
           </table>
+
           <div style={{ borderTop: "1px dashed #000", marginTop: "8px", paddingTop: "8px", fontSize: "14px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
               <span>Subtotal</span><span>₹{billInfo.subtotal.toFixed(2)}</span>
@@ -818,9 +965,11 @@ export default function RestaurantPOS(): JSX.Element {
               <span>TOTAL</span><span>₹{billInfo.total.toFixed(2)}</span>
             </div>
           </div>
+
           <div style={{ textAlign: "center", marginTop: "14px", fontSize: "13px" }}>Thank you! Visit Again 🙏</div>
         </div>
       )}
+
     </div>
   );
 }
