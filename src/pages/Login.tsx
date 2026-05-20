@@ -562,7 +562,14 @@ export default function AuthPage(): JSX.Element {
         >
           {isLogin ? "SIGN IN" : "SIGN UP"}
         </button>
-
+        {isLogin && (
+          <p
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-blue-400 cursor-pointer mt-3 hover:underline text-right"
+          >
+            Forgot Password?
+          </p>
+        )}
         {/* Switch */}
         <p className="mt-4 text-sm">
           {isLogin
@@ -594,3 +601,7 @@ export default function AuthPage(): JSX.Element {
     </div>
   );
 }
+
+
+
+
