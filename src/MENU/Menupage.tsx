@@ -236,10 +236,10 @@ export default function MenuPage() {
       </div>
  
       {/* Back button */}
-      <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+      {/* <div className="fixed bottom-0 left-0 p-3 sm:p-4">
         <BackButton to="/dashboard" />
       </div>
- 
+  */}
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-[#1a1200]/45 flex items-center justify-center z-50 px-4" onClick={(e) => e.target === e.currentTarget && closeModal()}>

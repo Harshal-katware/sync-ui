@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, type JSX } from "react";
 import axiosInstance from "../Api/axiosInstance";
 import { getAllCaptains, type Captain } from "../Api/captainApi";
 import { useLang, type Language } from "../context/languageContext";
+import BackButton from "../components/BackButton";
 
 const KOT_PRINT_STYLE = `
   @media print {
@@ -582,15 +583,15 @@ export default function RestaurantPOS(): JSX.Element {
 
         {/* Header */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 flex-wrap" style={{ background: "#1a1a1a", minHeight: "44px" }}>
-          <button
+          {/* <button
             onClick={() => window.history.back()}
             className="text-white font-bold rounded hover:bg-white/10 transition-colors flex items-center justify-center"
             style={{ fontSize: "30px", width: "32px", height: "40px", lineHeight: 1 }}
             title="Back"
           >
             ←
-          </button>
-
+          </button> */}
+    
           <input
             value={selectedTableObj?.name ?? ""}
             readOnly
@@ -973,3 +974,7 @@ export default function RestaurantPOS(): JSX.Element {
     </div>
   );
 }
+
+      // <div className="fixed bottom-0 left-0 p-3 sm:p-4">
+      //   <BackButton to="/dashboard" />
+      // </div>
