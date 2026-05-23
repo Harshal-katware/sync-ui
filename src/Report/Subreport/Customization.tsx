@@ -67,7 +67,6 @@ export default function Customization() {
     setError("");
   };
 
-  // PDF FUNCTION
   const downloadPDF = () => {
     if (!result) return;
 
@@ -77,12 +76,7 @@ export default function Customization() {
     doc.text(t("rep.custom.title"), 14, 20);
 
     doc.setFontSize(12);
-    doc.text(
-      `Generated on: ${new Date().toLocaleString()}`,
-      14,
-      30
-    );
-
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
     doc.text(`Payment: ${payment.toUpperCase()}`, 14, 38);
     doc.text(`Order Type: ${orderType}`, 14, 46);
 
@@ -91,7 +85,7 @@ export default function Customization() {
       head: [["Summary", "Value"]],
       body: [
         [t("rep.custom.totalSales"), `Rs. ${result.totalSales}`],
-        [t("rep.custom.itemsSold"), `${result.totalQty}`],
+        [t("rep.custom.itemsSold"),  `${result.totalQty}`],
         [t("rep.custom.topProduct"), `${result.topProduct}`],
       ],
     });
@@ -100,15 +94,13 @@ export default function Customization() {
 
     autoTable(doc, {
       startY: finalY + 10,
-      head: [
-        [
-          t("rep.custom.item"),
-          t("rep.custom.qty"),
-          t("rep.custom.revenue"),
-          t("rep.custom.payment"),
-          t("rep.custom.type"),
-        ],
-      ],
+      head: [[
+        t("rep.custom.item"),
+        t("rep.custom.qty"),
+        t("rep.custom.revenue"),
+        t("rep.custom.payment"),
+        t("rep.custom.type"),
+      ]],
       body: result.items.length
         ? result.items.map((item) => [
             item.name,
@@ -123,7 +115,6 @@ export default function Customization() {
     doc.setFontSize(10);
     doc.setTextColor(120);
     doc.text("Generated automatically", 14, 285);
-
     doc.save("custom-report.pdf");
   };
 
@@ -134,7 +125,6 @@ export default function Customization() {
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
           {t("rep.custom.title")}
         </h1>
-
         <p className="text-gray-500 text-sm sm:text-base">
           {t("rep.custom.subtitle")}
         </p>
@@ -150,25 +140,11 @@ export default function Customization() {
             }
             className="bg-gray-100 border p-3 rounded-lg w-full"
           >
-            <option value="all">
-              {t("rep.custom.allPayments")}
-            </option>
-
-            <option value="CASH">
-              {t("rep.custom.cash")}
-            </option>
-
-            <option value="UPI">
-              {t("rep.custom.upi")}
-            </option>
-
-            <option value="CARD">
-              {t("rep.custom.card")}
-            </option>
-
-            <option value="ONLINE">
-              {t("rep.custom.online")}
-            </option>
+            <option value="all">{t("rep.custom.allPayments")}</option>
+            <option value="CASH">{t("rep.custom.cash")}</option>
+            <option value="UPI">{t("rep.custom.upi")}</option>
+            <option value="CARD">{t("rep.custom.card")}</option>
+            <option value="ONLINE">{t("rep.custom.online")}</option>
           </select>
 
           <select
@@ -178,21 +154,10 @@ export default function Customization() {
             }
             className="bg-gray-100 border p-3 rounded-lg w-full"
           >
-            <option value="all">
-              {t("rep.custom.allOrders")}
-            </option>
-
-            <option value="dine-in">
-              {t("rep.custom.dineIn")}
-            </option>
-
-            <option value="takeaway">
-              {t("rep.custom.takeaway")}
-            </option>
-
-            <option value="online">
-              {t("rep.custom.online")}
-            </option>
+            <option value="all">{t("rep.custom.allOrders")}</option>
+            <option value="dine-in">{t("rep.custom.dineIn")}</option>
+            <option value="takeaway">{t("rep.custom.takeaway")}</option>
+            <option value="online">{t("rep.custom.online")}</option>
           </select>
         </div>
 
@@ -201,11 +166,10 @@ export default function Customization() {
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="w-full sm:w-auto px-6 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 disabled:opacity-60"
+            className="w-full sm:w-auto px-6 py-2 text-white rounded-lg disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, #0d4a3a, #1a6b52)" }}
           >
-            {loading
-              ? t("rep.custom.loading")
-              : t("rep.custom.generate")}
+            {loading ? t("rep.custom.loading") : t("rep.custom.generate")}
           </button>
 
           <button
@@ -218,7 +182,8 @@ export default function Customization() {
           {show && result && (
             <button
               onClick={downloadPDF}
-              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-lg shadow transition"
+              className="w-full sm:w-auto px-6 py-2 text-white rounded-lg shadow transition"
+              style={{ background: "linear-gradient(135deg, #0d4a3a, #1a6b52)" }}
             >
               {t("rep.custom.download")}
             </button>
@@ -226,9 +191,7 @@ export default function Customization() {
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm">
-            ⚠ {error}
-          </p>
+          <p className="text-red-500 text-sm">⚠ {error}</p>
         )}
       </div>
 
@@ -243,101 +206,57 @@ export default function Customization() {
             <>
               {/* Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600">
-                    {t("rep.custom.totalSales")}
-                  </p>
-
-                  <h2 className="font-bold text-lg">
-                    ₹{result.totalSales}
-                  </h2>
+                <div className="bg-gray-100 p-5 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600">{t("rep.custom.totalSales")}</p>
+                  <h2 className="font-bold text-lg text-gray-800">₹{result.totalSales}</h2>
                 </div>
 
-                <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-                  <p className="text-sm text-gray-600">
-                    {t("rep.custom.itemsSold")}
-                  </p>
-
-                  <h2 className="font-bold text-lg">
-                    {result.totalQty}
-                  </h2>
+                <div className="bg-gray-100 p-5 rounded-xl shadow-sm">
+                  <p className="text-sm text-gray-600">{t("rep.custom.itemsSold")}</p>
+                  <h2 className="font-bold text-lg text-gray-800">{result.totalQty}</h2>
                 </div>
 
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
-                  <p className="text-sm">
-                    {t("rep.custom.topProduct")}
-                  </p>
-
-                  <h2 className="font-bold text-lg">
-                    {result.topProduct}
-                  </h2>
+                <div className="text-white p-5 rounded-xl shadow" style={{ background: "linear-gradient(135deg, #0d4a3a, #1a6b52)" }}>
+                  <p className="text-sm">{t("rep.custom.topProduct")}</p>
+                  <h2 className="font-bold text-lg">{result.topProduct}</h2>
                 </div>
               </div>
 
               {/* Chart */}
-              <div className="bg-gray-200 p-4 sm:p-6 rounded-xl shadow-sm">
-                <p className="mb-3 font-semibold">
-                  {t("rep.custom.salesChart")}
-                </p>
+              <div className="bg-gray-100 p-4 sm:p-6 rounded-xl shadow-sm">
+                <p className="mb-3 font-semibold">{t("rep.custom.salesChart")}</p>
 
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={result.items}>
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip cursor={false} />
-                    <Bar dataKey="revenue" fill="#7c3aed" />
+                    <Bar dataKey="revenue" fill="#0d4a3a" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Table */}
-              <div className="bg-gray-200 rounded-xl shadow-sm overflow-x-auto">
+              <div className="bg-gray-100 rounded-xl shadow-sm overflow-x-auto">
                 <table className="w-full text-sm min-w-150">
-                  <thead className="bg-gray-300">
+                  <thead className="bg-gray-200">
                     <tr>
-                      <th className="p-3 text-left">
-                        {t("rep.custom.item")}
-                      </th>
-
-                      <th className="p-3 text-left">
-                        {t("rep.custom.qty")}
-                      </th>
-
-                      <th className="p-3 text-left">
-                        {t("rep.custom.revenue")}
-                      </th>
-
-                      <th className="p-3 text-left">
-                        {t("rep.custom.payment")}
-                      </th>
-
-                      <th className="p-3 text-left">
-                        {t("rep.custom.type")}
-                      </th>
+                      <th className="p-3 text-left">{t("rep.custom.item")}</th>
+                      <th className="p-3 text-left">{t("rep.custom.qty")}</th>
+                      <th className="p-3 text-left">{t("rep.custom.revenue")}</th>
+                      <th className="p-3 text-left">{t("rep.custom.payment")}</th>
+                      <th className="p-3 text-left">{t("rep.custom.type")}</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {result.items.map((item, i) => (
-                      <tr
-                        key={i}
-                        className="border-t hover:bg-gray-300 transition"
-                      >
+                      <tr key={i} className="border-t hover:bg-gray-200 transition">
                         <td className="p-3">{item.name}</td>
-
                         <td className="p-3">{item.qty}</td>
-
-                        <td className="p-3 text-green-600">
-                          ₹{item.revenue}
-                        </td>
-
-                        <td className="p-3">
-                          {item.payment}
-                        </td>
-
-                        <td className="p-3 capitalize">
-                          {item.type}
-                        </td>
+                        <td className="p-3 font-medium" style={{ color: "#1a6b52" }}>₹{item.revenue}</td>
+                        <td className="p-3">{item.payment}</td>
+                        <td className="p-3 capitalize">{item.type}</td>
                       </tr>
                     ))}
                   </tbody>
