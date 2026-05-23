@@ -40,7 +40,7 @@ interface NavbarProps {
   moduleName?: string;
   moduleSubtitle?: string;
   appName?: string;
-  restaurantName?: string; // ✅ DB se restaurant name
+  restaurantName?: string;
   onSettingsClick?: () => void;
   onProfileClick?: () => void;
   onLogout?: () => void;
@@ -82,8 +82,6 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
     setError("");
     if (!form.current || !form.newPass || !form.confirm)
       return setError("All fields are required.");
- 
-    // ✅ Fix 3 — 8 characters minimum (backend ke saath match)
     if (form.newPass.length < 8)
       return setError("New password must be at least 8 characters.");
     if (form.newPass !== form.confirm)
@@ -91,7 +89,6 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
  
     setLoading(true);
     try {
-      // ✅ Fix 4 — axios use kar raha hai, fetch nahi
       const res = await fetch(`${API_BASE}/auth/change-password`, {
         method: "POST",
         headers: {
@@ -140,12 +137,12 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden" style={{ animation: "cpFadeIn .25s ease" }}>
-        <div className="bg-emerald-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-[#1a1f2e] px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-white font-serif text-[17px] font-semibold">Change Password</h2>
-            <p className="text-emerald-200 text-[11px] mt-0.5">Update your account credentials</p>
+            <p className="text-white/50 text-[11px] mt-0.5">Update your account credentials</p>
           </div>
-          <button onClick={onClose} className="text-emerald-200 hover:text-white text-xl leading-none transition-colors">✕</button>
+          <button onClick={onClose} className="text-white/50 hover:text-white text-xl leading-none transition-colors">✕</button>
         </div>
         <div className="px-6 py-5 flex flex-col gap-3.5">
           {fields.map(({ key, label, placeholder }: PasswordField) => (
@@ -157,7 +154,7 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
                   placeholder={placeholder}
                   value={form[key]}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 pr-10 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 pr-10 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a1f2e] focus:bg-white transition-all"
                 />
                 <button type="button" onClick={() => setShow({ ...show, [key]: !show[key] })} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                   <EyeIcon visible={show[key]} />
@@ -166,8 +163,8 @@ function ChangePasswordModal({ onClose, token }: ChangePasswordModalProps): JSX.
             </div>
           ))}
           {error && <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">⚠ {error}</p>}
-          {success && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">✓ Password changed successfully!</p>}
-          <button onClick={handleSubmit} disabled={loading} className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-all active:scale-95 mt-1 disabled:opacity-60 disabled:cursor-not-allowed">
+          {success && <p className="text-xs text-green-600 font-medium flex items-center gap-1.5">✓ Password changed successfully!</p>}
+          <button onClick={handleSubmit} disabled={loading} className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-[#1a1f2e] hover:bg-[#252b3d] transition-all active:scale-95 mt-1 disabled:opacity-60 disabled:cursor-not-allowed">
             {loading ? "Updating…" : "Update Password"}
           </button>
           <button onClick={onClose} className="w-full py-2 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all">Cancel</button>
@@ -211,7 +208,7 @@ export default function Navbar({
   variant = "dashboard",
   moduleName = "",
   moduleSubtitle = "Restaurant Management System",
-  restaurantName = "", // ✅
+  restaurantName = "",
 }: NavbarProps): JSX.Element {
  
   const navigate = useNavigate();
@@ -220,7 +217,6 @@ export default function Navbar({
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showLogout, setShowLogout] = useState<boolean>(false);
  
-  // ✅ Fix 1 — user state re-read on mount
   const [user, setUser] = useState(getStoredUser);
   useEffect(() => {
     setUser(getStoredUser());
@@ -245,7 +241,6 @@ export default function Navbar({
   }, []);
  
   const handleLogoutConfirm = (): void => {
-    // ✅ Fix 2 — userContact bhi clear hoga logout pe
     ["token", "userName", "userEmail", "userRole", "userContact"].forEach((k) => {
       localStorage.removeItem(k);
       sessionStorage.removeItem(k);
@@ -257,11 +252,14 @@ export default function Navbar({
   // ── MODULE VARIANT ──────────────────────────────────────────────────────
   if (variant === "module") {
     return (
-      // ✅ Fix 5 — Back button add kiya module variant mein
-      <div className="w-full bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-4">
+      // ✅ CHANGED: gradient left dark navy → right dark teal (matching image)
+      <div
+        className="w-full px-4 sm:px-8 py-4 flex items-center gap-4"
+        style={{ background: "linear-gradient(to right, #1a4a4a, #0d6e5f)" }}
+      >
         <button
           onClick={() => navigate(-1)}
-          className="text-white/80 hover:text-white transition-colors"
+          className="text-white/70 hover:text-white transition-colors"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -270,7 +268,7 @@ export default function Navbar({
         </button>
         <div>
           <h1 className="text-xl sm:text-[26px] font-serif text-white tracking-wide">{moduleName}</h1>
-          <p className="text-[10px] sm:text-[11px] text-white/70 tracking-[2px] uppercase mt-1 font-semibold">{moduleSubtitle}</p>
+          <p className="text-[10px] sm:text-[11px] text-white/50 tracking-[2px] uppercase mt-1 font-semibold">{moduleSubtitle}</p>
         </div>
       </div>
     );
@@ -288,7 +286,7 @@ export default function Navbar({
  
         {/* Left — Brand */}
         <h1 className="text-xl font-serif text-gray-100">
-          🍽️ {restaurantName || "Sync Restaurant"} {/* ✅ DB se naam, fallback default */}
+          🍽️ {restaurantName || "Sync Restaurant"}
         </h1>
  
         {/* Right — Icons */}
@@ -333,10 +331,10 @@ export default function Navbar({
                 style={{ animation: "cpSlideDown .2s ease" }}
               >
                 {/* Profile header */}
-                <div className="px-4 py-4 bg-gradient-to-br from-emerald-50 to-white border-b border-gray-100 flex items-center gap-3">
+                <div className="px-4 py-4 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex items-center gap-3">
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 border-amber-200 shadow-sm"
-                    style={{ background: "linear-gradient(135deg,#d97706,#b45309)" }}
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 border-white/50 shadow-sm"
+                    style={{ background: "linear-gradient(135deg,#1a1f2e,#252b3d)" }}
                   >
                     <span className="text-white text-base font-bold">{initials}</span>
                   </div>
@@ -345,7 +343,7 @@ export default function Navbar({
                       {user.name}
                     </p>
                     <p className="text-[11px] text-gray-400 truncate">{user.email || user.role}</p>
-                    <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
                       ● Active
                     </span>
                   </div>
@@ -357,8 +355,8 @@ export default function Navbar({
                     onClick={() => { setOpenMenu(null); setShowPassword(true); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group text-left"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 group-hover:bg-slate-200 transition-colors">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a1f2e" strokeWidth="2" strokeLinecap="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                         <path d="M7 11V7a5 5 0 0110 0v4" />
                       </svg>
