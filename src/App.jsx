@@ -15,8 +15,8 @@ import AdminPanel from "./SuperAdmin/AdminPanel";
 import SubscriptionWarning from "./components/SubscriptionWarning";
 import SubscriptionExpired from "./pages/SubscriptionExpired";
 import SuperAdminLogin from "./pages/SuperAdminLogin"
-
-
+import ForgotPassword from "./pages/ForgotPassword"
+import ResetPassword from "./pages/ResetPassword"
 export default function App() {
   return (
     <BrowserRouter>
@@ -25,22 +25,29 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Login />} />
 
-      
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
 
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPassword />}
+        />
         <Route path="/expired" element={<SubscriptionExpired />} />
 
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />
 
         <Route path="/super-admin" element={
-         <ProtectedRoute>
-          <Dashboard/>
-         </ProtectedRoute>
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
         } />
 
         <Route path="/admin" element={
-         <ProtectedRoute>
-          <AdminPanel />
-         </ProtectedRoute>
+          <ProtectedRoute>
+            <AdminPanel />
+          </ProtectedRoute>
         } />
         <Route
           path="/dashboard"
@@ -150,7 +157,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        
+
       </Routes>
     </BrowserRouter>
   );
