@@ -666,7 +666,7 @@ export default function RestaurantPOS(): JSX.Element {
         {/* Top Nav Bar — Menu Manager gradient */}
         <div
           className="flex items-center gap-2 px-4 py-3 flex-wrap"
-          style={{ background: "linear-gradient(to right, #0d1117, #0d6e5f)", borderBottom: "1px solid rgba(255,255,255,0.08)", minHeight: "56px" }}
+          style={{ background: "linear-gradient(to right, #1a4a4a, #0d6e5f)", borderBottom: "1px solid rgba(255,255,255,0.08)", minHeight: "56px" }}
         >
           {/* Back Arrow */}
           <button
@@ -923,7 +923,7 @@ export default function RestaurantPOS(): JSX.Element {
         <div
           className="flex items-stretch"
           style={{
-            background: saving ? "#64748b" : "linear-gradient(to right, #0d1117, #0d6e5f)",
+            background: saving ? "#64748b" : "linear-gradient(to right, #1a4a4a, #0d6e5f)",
             minHeight: "52px",
             transition: "background 0.2s",
           }}
@@ -956,7 +956,7 @@ export default function RestaurantPOS(): JSX.Element {
         {/* Action Buttons — teal gradient header */}
         <div
           className="grid gap-2 p-3"
-          style={{ background: "linear-gradient(to right, #0d1117, #0d6e5f)", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+          style={{ background: "linear-gradient(to right, #1a4a4a, #0d6e5f)", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
         >
           <button
             onClick={printKOT}
