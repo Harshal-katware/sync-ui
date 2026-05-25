@@ -64,10 +64,10 @@ export default function MonthlyReport(): React.ReactNode {
   });
 
   const [data, setData] = useState<ReportData | null>(null);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
+  const [deleted, setDeleted] = useState(false);        // ← NEW
+  const [showConfirm, setShowConfirm] = useState(false); // ← NEW
 
   useEffect(() => {
     getMonthlyReport()
@@ -75,6 +75,14 @@ export default function MonthlyReport(): React.ReactNode {
       .catch(() => setError(t("rep.monthly.error")))
       .finally(() => setLoading(false));
   }, []);
+
+  // ─── DELETE HANDLER ───────────────────────────────────────────────
+  const handleDelete = () => {
+    setData(null);       // wipe all report data from screen
+    setDeleted(true);    // show "cleared" message
+    setShowConfirm(false);
+  };
+  // ─────────────────────────────────────────────────────────────────
 
   const netSales = data?.netSales ?? 0;
 
@@ -91,85 +99,40 @@ export default function MonthlyReport(): React.ReactNode {
   const downloadPDF = () => {
     const doc = new jsPDF();
 
-    // Title
     doc.setFontSize(20);
     doc.text(t("rep.monthly.title"), 14, 20);
-
     doc.setFontSize(12);
-
     doc.text(`Month: ${monthName}`, 14, 30);
 
-    // Summary Table
     autoTable(doc, {
       startY: 40,
       head: [["Metric", "Value"]],
       body: [
-        [
-          t("rep.monthly.totalSales"),
-          `Rs. ${data?.totalSales ?? 0}`,
-        ],
-
-        [
-          t("rep.monthly.discount"),
-          `Rs. ${data?.discount ?? 0}`,
-        ],
-
-        [
-          t("rep.monthly.refund"),
-          `Rs. ${data?.refund ?? 0}`,
-        ],
-
-        [
-          t("rep.monthly.netSales"),
-          `Rs. ${netSales}`,
-        ],
-
-        [
-          t("rep.monthly.orders"),
-          `${data?.orders ?? 0}`,
-        ],
-
-        [
-          t("rep.monthly.avgOrder"),
-          `Rs. ${data?.avgOrder ?? 0}`,
-        ],
+        [t("rep.monthly.totalSales"), `Rs. ${data?.totalSales ?? 0}`],
+        [t("rep.monthly.discount"),   `Rs. ${data?.discount ?? 0}`],
+        [t("rep.monthly.refund"),     `Rs. ${data?.refund ?? 0}`],
+        [t("rep.monthly.netSales"),   `Rs. ${netSales}`],
+        [t("rep.monthly.orders"),     `${data?.orders ?? 0}`],
+        [t("rep.monthly.avgOrder"),   `Rs. ${data?.avgOrder ?? 0}`],
       ],
     });
 
-    const finalY =
-      (doc as any).lastAutoTable?.finalY || 60;
+    const finalY = (doc as any).lastAutoTable?.finalY || 60;
 
-    // Top Products Table
     autoTable(doc, {
       startY: finalY + 10,
-
-      head: [[
-        t("rep.top.product"),
-        t("rep.top.qty"),
-      ]],
-
-      body:
-        data?.topItems?.length
-          ? data.topItems.map((item) => [
-              item.name,
-              item.qty,
-            ])
-          : [[t("rep.monthly.noDataMonth"), "-"]],
+      head: [[t("rep.top.product"), t("rep.top.qty")]],
+      body: data?.topItems?.length
+        ? data.topItems.map((item) => [item.name, item.qty])
+        : [[t("rep.monthly.noDataMonth"), "-"]],
     });
 
-    // Footer
     doc.setFontSize(10);
-
-    doc.text(
-      `Generated on ${new Date().toLocaleString()}`,
-      14,
-      280
-    );
-
+    doc.text(`Generated on ${new Date().toLocaleString()}`, 14, 280);
     doc.save("monthly-report.pdf");
   };
 
-  // Loading
+  // ── Loading ──
   if (loading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -177,7 +140,7 @@ export default function MonthlyReport(): React.ReactNode {
       </div>
     );
 
-  // Error
+  // ── Error ──
   if (error)
     return (
       <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
@@ -185,83 +148,107 @@ export default function MonthlyReport(): React.ReactNode {
       </div>
     );
 
-  return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-serif text-gray-800">
-          {t("rep.monthly.title")}
-        </h1>
-
-        <p className="text-gray-500">
-          {monthName}
+  // ── DELETED / CLEARED STATE ──────────────────────────────────────
+  if (deleted)
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-3 text-center">
+        <div className="text-5xl">🗑️</div>
+        <p className="text-gray-500 text-lg font-medium">
+          Monthly Report — Cleared
+        </p>
+        <p className="text-gray-400 text-sm">
+          No data is visible. Reload the page to fetch again.
         </p>
       </div>
+    );
+  // ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="space-y-6">
+
+      {/* ── Title + Delete Button row ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-serif text-gray-800">
+            {t("rep.monthly.title")}
+          </h1>
+          <p className="text-gray-500">{monthName}</p>
+        </div>
+
+        {/* DELETE BUTTON */}
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-red-50 border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-500 rounded-lg text-sm font-medium transition-all"
+        >
+          🗑️ Clear Report
+        </button>
+      </div>
+
+      {/* ── Confirm Dialog ── */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Clear this report?
+            </h2>
+            <p className="text-gray-500 text-sm">
+              This will hide all report data from the screen. The actual data in your database is NOT deleted — only this view is cleared.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleDelete}
+                className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition"
+              >
+                Yes, Clear
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>
-            {t("rep.monthly.totalSales")}
-          </p>
-
-          <h2 className="font-bold">
-            ₹{data?.totalSales ?? 0}
-          </h2>
+          <p>{t("rep.monthly.totalSales")}</p>
+          <h2 className="font-bold">₹{data?.totalSales ?? 0}</h2>
         </div>
 
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>
-            {t("rep.monthly.discount")}
-          </p>
-
-          <h2 className="text-yellow-600 font-bold">
-            ₹{data?.discount ?? 0}
-          </h2>
+          <p>{t("rep.monthly.discount")}</p>
+          <h2 className="text-yellow-600 font-bold">₹{data?.discount ?? 0}</h2>
         </div>
 
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          <p>
-            {t("rep.monthly.refund")}
-          </p>
-
-          <h2 className="text-red-500 font-bold">
-            ₹{data?.refund ?? 0}
-          </h2>
+          <p>{t("rep.monthly.refund")}</p>
+          <h2 className="text-red-500 font-bold">₹{data?.refund ?? 0}</h2>
         </div>
 
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-5 rounded-xl shadow">
-          <p>
-            {t("rep.monthly.netSales")}
-          </p>
-
-          <h2 className="font-bold">
-            ₹{netSales}
-          </h2>
+          <p>{t("rep.monthly.netSales")}</p>
+          <h2 className="font-bold">₹{netSales}</h2>
         </div>
       </div>
 
       {/* Orders */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          {t("rep.monthly.orders")}:
-          <b> {data?.orders ?? 0}</b>
+          {t("rep.monthly.orders")}:<b> {data?.orders ?? 0}</b>
         </div>
-
         <div className="bg-gray-200 p-5 rounded-xl shadow-sm">
-          {t("rep.monthly.avgOrder")}:
-          <b> ₹{data?.avgOrder ?? 0}</b>
+          {t("rep.monthly.avgOrder")}:<b> ₹{data?.avgOrder ?? 0}</b>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart */}
         <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
-          <p className="mb-3 font-semibold">
-            {t("rep.monthly.topProducts")}
-          </p>
-
+          <p className="mb-3 font-semibold">{t("rep.monthly.topProducts")}</p>
           {(data?.topItems?.length ?? 0) === 0 ? (
             <p className="text-center text-gray-400 py-10">
               {t("rep.monthly.noDataMonth")}
@@ -272,22 +259,14 @@ export default function MonthlyReport(): React.ReactNode {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip cursor={false} />
-
-                <Bar
-                  dataKey="qty"
-                  fill="#7c3aed"
-                />
+                <Bar dataKey="qty" fill="#7c3aed" />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Pie Chart */}
         <div className="bg-gray-200 p-6 rounded-xl shadow-sm">
-          <p className="mb-3 font-semibold">
-            {t("rep.monthly.paymentMethods")}
-          </p>
-
+          <p className="mb-3 font-semibold">{t("rep.monthly.paymentMethods")}</p>
           {pieData.length === 0 ? (
             <p className="text-center text-gray-400 py-10">
               {t("rep.monthly.noPaymentData")}
@@ -295,23 +274,11 @@ export default function MonthlyReport(): React.ReactNode {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={80}
-                  label
-                >
+                <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
                   {pieData.map((_, index) => (
-                    <Cell
-                      key={index}
-                      fill={
-                        COLORS[index % COLORS.length]
-                      }
-                    />
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
