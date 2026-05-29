@@ -6,6 +6,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       // force wasm build
-    }
+    },
+   
   }
 })

@@ -32,3 +32,31 @@ export const getCustomReport = async (params: {
   const { data } = await axiosInstance.get("/api/reports/custom", { params });
   return data;
 };
+
+// ── Adjust Order ───────────────────────────────────────────────────
+
+export const adjustOrder = async (
+  orderId: number,
+  payload: {
+    amount: number;
+    reason: string;
+    type: string;
+    adjustedBy: string;
+  }
+) => {
+
+  const { data } = await axiosInstance.post(
+    `/api/orders/${orderId}/adjust`,
+    payload
+  );
+
+  return data;
+};
+export const getSettledOrders = async () => {
+
+  const { data } = await axiosInstance.get(
+    "/api/orders/settled"
+  );
+
+  return data;
+};
