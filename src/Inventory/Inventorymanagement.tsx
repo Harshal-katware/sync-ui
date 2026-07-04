@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import BackButton from "../components/BackButton.js";
+
 import Navbar from "../components/Navbar.js";
 import axiosInstance from "../Api/axiosInstance.js";
-const API = "/api/inventory"; // ✅ baseURL axiosInstance mein hai, isliye sirf path
+const API = "/api/inventory";
 
 // ─── TYPES ───────────────────────────────────────────────────────────
 type Item = {
@@ -168,7 +168,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
   );
 }
 
-// ─── Stat Card ───────────────────────────────────────────────────────
+// ─── Stat Card — Menu Manager style (border-left) ────────────────────
 function StatCard({
   label,
   value,
@@ -179,16 +179,22 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm border border-gray-100 bg-white">
-      <span className="text-xs uppercase tracking-widest text-gray-400 font-semibold">
+    <div
+      className="bg-white rounded-xl px-5 py-4 shadow-sm"
+      style={{ borderLeft: `4px solid ${accent}` }}
+    >
+      <p
+        className="text-[9px] sm:text-[11px] text-[#6b7280] uppercase mb-1"
+        style={{ letterSpacing: "1.5px" }}
+      >
         {label}
-      </span>
-      <span
-        className="text-3xl font-black"
-        style={{ fontFamily: "'Playfair Display',serif", color: accent }}
+      </p>
+      <p
+        className="text-xl sm:text-2xl font-medium"
+        style={{ color: "#111827" }}
       >
         {value}
-      </span>
+      </p>
     </div>
   );
 }
@@ -223,7 +229,6 @@ export default function InventoryManagement() {
   const [search, setSearch] = useState<string>("");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  // ── Toast helper ──────────────────────────────────────────────────
   const showToast = (
     message: string,
     type: "success" | "error" = "success"
@@ -233,7 +238,6 @@ export default function InventoryManagement() {
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3000);
   };
 
-  // ✅ fetch — axiosInstance use kar raha hai (JWT auto-attach)
   const fetchItems = useCallback(async () => {
     try {
       setApiError("");
@@ -264,7 +268,6 @@ export default function InventoryManagement() {
       minute: "2-digit",
     });
 
-  // ✅ Stock In / Mark Used — axiosInstance
   const handleTransaction = async () => {
     setFormErr("");
     const item = items.find((i) => i.id === Number(form.itemId));
@@ -319,7 +322,6 @@ export default function InventoryManagement() {
     }
   };
 
-  // ✅ Add New Item — axiosInstance
   const handleAddItem = async () => {
     setFormErr("");
     if (!newItem.name.trim()) return setFormErr("Item name is required.");
@@ -357,12 +359,12 @@ export default function InventoryManagement() {
     .reduce((s, l) => s + l.qty, 0);
 
   const inp =
-    "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
+    "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a5c38] bg-white";
 
   return (
     <div
       className="h-screen overflow-hidden flex flex-col"
-      style={{ background: "#faf9f6", fontFamily: "'DM Sans',sans-serif" }}
+      style={{ background: "#f0f4f8", fontFamily: "'DM Sans',sans-serif" }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -376,7 +378,7 @@ export default function InventoryManagement() {
         .stock-scroll::-webkit-scrollbar-track { background:#f5f5f4; border-radius:99px; }
         .stock-scroll::-webkit-scrollbar-thumb { background:#d6d3d1; border-radius:99px; }
         .stock-scroll::-webkit-scrollbar-thumb:hover { background:#a8a29e; }
-        .spinner { width:32px;height:32px;border:3px solid #fde68a;border-top-color:#d97706;border-radius:50%;animation:spin .7s linear infinite; }
+        .spinner { width:32px;height:32px;border:3px solid #bbf7d0;border-top-color:#1a5c38;border-radius:50%;animation:spin .7s linear infinite; }
       `}</style>
 
       <LowStockAlert alerts={alerts} onDismiss={dismissAlert} />
@@ -398,13 +400,13 @@ export default function InventoryManagement() {
               key={key}
               onClick={() => setActiveTab(key)}
               className="relative px-6 py-4 text-base font-bold transition-all"
-              style={{ color: activeTab === key ? "#d97706" : "#78716c" }}
+              style={{ color: activeTab === key ? "#1a5c38" : "#78716c" }}
             >
               {label}
               {activeTab === key && (
                 <span
                   className="absolute bottom-0 left-5 right-5 h-0.5 rounded-full"
-                  style={{ background: "#d97706" }}
+                  style={{ background: "#1a5c38" }}
                 />
               )}
             </button>
@@ -439,11 +441,12 @@ export default function InventoryManagement() {
             {/* DASHBOARD */}
             {activeTab === "dashboard" && (
               <div style={{ animation: "fadeIn .4s ease" }}>
+                {/* Stat Cards — Menu Manager border-left style */}
                 <div className="grid grid-cols-4 gap-3 mb-4 w-full">
-                  <StatCard label="Total Items" value={items.length} accent="#1c1917" />
-                  <StatCard label="Low Stock" value={lowCount} accent={lowCount ? "#ea580c" : "#16a34a"} />
-                  <StatCard label="Stocked Today" value={todayIn.toFixed(1)} accent="#16a34a" />
-                  <StatCard label="Used Today" value={todayUsed.toFixed(1)} accent="#ea580c" />
+                  <StatCard label="Total Items"    value={items.length}          accent="#7c3aed" />
+                  <StatCard label="Low Stock"      value={lowCount}              accent={lowCount ? "#dc2626" : "#059669"} />
+                  <StatCard label="Stocked Today"  value={todayIn.toFixed(1)}    accent="#059669" />
+                  <StatCard label="Used Today"     value={todayUsed.toFixed(1)}  accent="#ea580c" />
                 </div>
 
                 <div className="max-w-6xl mx-auto">
@@ -462,7 +465,7 @@ export default function InventoryManagement() {
                           placeholder="Search items..."
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          className="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                          className="w-full pl-8 pr-3 py-1.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a5c38] focus:bg-white transition-all"
                         />
                         {search && (
                           <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-xs">✕</button>
@@ -477,7 +480,7 @@ export default function InventoryManagement() {
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
                           Mark Used
                         </button>
-                        <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95" style={{ color: "#d97706", borderColor: "#fde68a", background: "#fffbeb" }}>
+                        <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95" style={{ color: "#1a5c38", borderColor: "#a8d8b8", background: "#edf7f0" }}>
                           + Add Item
                         </button>
                       </div>
@@ -552,7 +555,7 @@ export default function InventoryManagement() {
                 <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-white">
                   <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
                     <h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: "1.05rem" }}>All Items & Triggers</h2>
-                    <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="text-xs font-bold text-amber-600 hover:text-amber-800 transition-colors">+ Add Item</button>
+                    <button onClick={() => { setAddItemModal(true); setFormErr(""); }} className="text-xs font-bold transition-colors" style={{ color: "#1a5c38" }}>+ Add Item</button>
                   </div>
                   <div className="stock-scroll overflow-y-auto" style={{ maxHeight: "480px" }}>
                     <table className="w-full text-sm">
@@ -658,7 +661,7 @@ export default function InventoryManagement() {
                 <p className="text-xs text-gray-400 mt-1">Alert fires when stock drops to this level.</p>
               </div>
               {formErr && <p className="text-xs text-red-600 font-medium">{formErr}</p>}
-              <button onClick={handleAddItem} className="mt-1 w-full py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 shadow" style={{ background: "linear-gradient(135deg,#d97706,#b45309)" }}>
+              <button onClick={handleAddItem} className="mt-1 w-full py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 shadow" style={{ background: "linear-gradient(135deg,#1a5c38,#14472c)" }}>
                 Add Item
               </button>
             </div>
@@ -666,9 +669,6 @@ export default function InventoryManagement() {
         </div>
       )}
 
-      <div className="sticky bottom-0 bg-[#faf9f6] border-t border-gray-100 px-4 py-2">
-        <BackButton to="/dashboard" />
-      </div>
     </div>
   );
 }

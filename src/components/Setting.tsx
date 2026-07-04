@@ -515,7 +515,6 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
-          <div className="border-t border-gray-100 px-2 py-4"><BackButton /></div>
         </aside>
 
         {/* Mobile tab bar */}

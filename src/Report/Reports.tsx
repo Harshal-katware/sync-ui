@@ -22,7 +22,8 @@ export default function Reports() {
       {/* MOBILE MENU BUTTON */}
       <button
         onClick={() => setOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 bg-[#059669] text-white p-2 rounded-lg"
+        className="md:hidden fixed top-4 left-4 z-50 text-white p-2 rounded-lg"
+        style={{ background: "linear-gradient(135deg, #0d4a3a, #1a6b52)" }}
       >
         <Menu size={20} />
       </button>
@@ -31,11 +32,12 @@ export default function Reports() {
       <aside
         className={`
           fixed md:static top-0 left-0 h-full z-40
-          w-64 bg-[#059669] backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col
+          w-64 backdrop-blur-xl text-white rounded-2xl p-6 flex flex-col
           transform transition-transform duration-300
           ${open ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
         `}
+        style={{ background: "linear-gradient(160deg, #0d4a3a 0%, #1a6b52 100%)" }}
       >
         <h1 className="text-2xl font-serif mb-10 tracking-wide">
           {t("rep.title")}

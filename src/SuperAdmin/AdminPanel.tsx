@@ -312,7 +312,8 @@ export default function AdminPanel() {
       `}</style>
 
       {/* ── Header ── */}
-      <div className="bg-emerald-700 px-4 sm:px-8 py-4 flex items-center gap-3 shadow-sm">
+      <div className=" px-4 sm:px-8 py-4 flex items-center gap-3 shadow-sm"
+      style={{ background: "linear-gradient(to right, #1a4a4a, #0d6e5f)" }}>
         <button onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 text-white/80 hover:text-white transition text-sm font-semibold">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -371,7 +372,10 @@ export default function AdminPanel() {
             🔄 Refresh
           </button>
           <button onClick={() => setShowCreateModal(true)}
-            className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold transition active:scale-95 shadow-sm">
+            className="px-5 py-2.5  text-white rounded-xl text-sm font-bold transition active:scale-95 shadow-sm"
+            style={{
+              background: "linear-gradient(to right, #1b4332, #0f766e)"
+                }}>
             ➕ Add User
           </button>
         </div>

@@ -87,7 +87,7 @@ export default function SubscriptionExpired() {
             </a>
             <a href="mailto:support@syncrestaurant.com"
                className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-700 transition font-medium">
-              📧 <span>support@syncrestaurant.com</span>
+              📧 <span>staysync.restaurant@gmail.com</span>
             </a>
             <a href="https://wa.me/919876543210" target="_blank" rel="noreferrer"
                className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-700 transition font-medium">
