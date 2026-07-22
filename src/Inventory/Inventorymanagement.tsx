@@ -10,7 +10,7 @@ type Item = {
   name: string;
   unit: string;
   stock: number;
-  minQty: number;
+  minQty: number  ;
 };
 
 type LogEntry = {
