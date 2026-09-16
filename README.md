@@ -376,13 +376,6 @@ This project is licensed under the MIT License.
 
 ---
 
-## 📞 Contact
-
-For any queries or support:
-- 📧 Email: akifpanari@gmail.com
-- 💼 LinkedIn: linkedin.com/in/akifpanari
-- 🐙 GitHub: github.com/akifpanari
-
 ---
 
 > Built with ❤️ by Team Stay Sync
